@@ -13,6 +13,8 @@ public class HeruGolfGenerator {
     float fillRatio = 0.7f;
     int[][] boardState;
     int[] values = new int[]{1, 2, 3, 7, 9, 11, 13};
+    double mean = 2.5;
+    double variance = 1;
 
     HeruGolfGenerator(int width, int height) {
         this.width = width;
@@ -64,45 +66,15 @@ public class HeruGolfGenerator {
         int maxBallSize = 7;
         ArrayList<ArrayList<Double>> results = new ArrayList<>(maxBallSize);
         for (int i = 0; i < maxBallSize; i++) {
-            results.add(new ArrayList<Double>());
+            results.add(new ArrayList<>());
         }
 
         for (int i = 0; i < 1000; i++) {
-            double res = getGaussian(2.5, 1);
+            double res = getGaussian(mean, variance);
             int resInt = (int) res;
 
-
-            switch (resInt) {
-                case 0:
-                    results.get(0).add(res);
-                    break;
-                case 1:
-                    results.get(1).add(res);
-                    break;
-                case 2:
-                    results.get(2).add(res);
-                    break;
-                case 3:
-                    results.get(3).add(res);
-                    break;
-                case 4:
-                    results.get(4).add(res);
-                    break;
-                case 5:
-                    results.get(5).add(res);
-                    break;
-                case 6:
-                    results.get(6).add(res);
-                    break;
-                case 7:
-                    results.get(7).add(res);
-                    break;
-                case 8:
-                    results.get(8).add(res);
-                    break;
-                case 9:
-                    results.get(9).add(res);
-                    break;
+            if (resInt >= 0 && resInt < results.size()) {
+                results.get(resInt).add(res);
             }
 
             float tilesUsed = estimateTilesUsed(results);
@@ -159,7 +131,7 @@ public class HeruGolfGenerator {
         HOLE(5);
 
         private final int value;
-        private TileState(int value) {
+        TileState(int value) {
             this.value = value;
         }
 

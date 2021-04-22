@@ -1,35 +1,71 @@
 package com.company;
 
+import java.util.ArrayList;
+import java.util.OptionalDouble;
 import java.util.Random;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        //HeruGolfGenerator golfGenerator = new HeruGolfGenerator(5, 7);
+        HeruGolfGenerator golfGenerator = new HeruGolfGenerator(5, 5);
 
-        int[] results = new int[7];
+//        ArrayList<ArrayList<Double>> results = new ArrayList<>(6);
+//        for (int i = 0; i < 6; i++) {
+//            results.add(new ArrayList<Double>());
+//        }
+//
+//        for (int i = 0; i < 1000; i++) {
+//            double res = getGaussian(3, 1);
+//            int resInt = (int) res;
+//
+//
+//            switch (resInt) {
+//                case 0:
+//                    results.get(0).add(res);
+//                    break;
+//                case 1:
+//                    results.get(1).add(res);
+//                    break;
+//                case 2:
+//                    results.get(2).add(res);
+//                    break;
+//                case 3:
+//                    results.get(3).add(res);
+//                    break;
+//                case 4:
+//                    results.get(4).add(res);
+//                    break;
+//                case 5:
+//                    results.get(5).add(res);
+//                    break;
+//            }
+//
+//        }
+//
+//        OptionalDouble[] averages = new OptionalDouble[6];
+//
+//        for (int i = 0; i < results.size(); i++) {
+//            averages[i] = results.get(i).stream().mapToDouble(a -> a).average();
+//        }
+//
+//        for (ArrayList<Double> result : results) {
+//            System.out.print(result.size() + " ");
+//        }
+//        System.out.println();
+//        int total = 0;
+//        for (OptionalDouble result : averages) {
+//            result.ifPresent(System.out::println);
+//        }
 
-        for (int i = 0; i < 1000; i++) {
-            double res = getGaussian(3, 1);
-            if (res > 0 && res < 1) {
-                results[0]++;
-            } else if (res > 1 && res < 2) {
-                results[1]++;
-            } else if (res > 2 && res < 3) {
-                results[2]++;
-            } else if (res > 3 && res < 4) {
-                results[3]++;
-            } else if (res > 4 && res < 5) {
-                results[4]++;
-            } else if (res > 5 && res < 6) {
-                results[5]++;
-            }
-        }
-
-        for (int result : results) {
-            System.out.print((double) result/100 + " ");
-        }
+//        int[] values = new int[]{1, 2, 5, 7, 12, 15};
+//        double[] ratios = new double[results.length];
+//        for (int i = 0; i < results.length; i++) {
+//            if (results[i] != 0) {
+//                ratios[i] = Math.round((double) results[i] / total * values[i]); //35 = estimated average
+//            }
+//            System.out.print(ratios[i] + " ");
+//        }
 
     }
 

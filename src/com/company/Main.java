@@ -1,8 +1,6 @@
 package com.company;
 
-import java.util.ArrayList;
-import java.util.OptionalDouble;
-import java.util.Random;
+import java.util.*;
 
 public class Main {
 
@@ -10,53 +8,7 @@ public class Main {
 
         HeruGolfGenerator golfGenerator = new HeruGolfGenerator(5, 5);
 
-//        ArrayList<ArrayList<Double>> results = new ArrayList<>(6);
-//        for (int i = 0; i < 6; i++) {
-//            results.add(new ArrayList<Double>());
-//        }
-//
-//        for (int i = 0; i < 1000; i++) {
-//            double res = getGaussian(3, 1);
-//            int resInt = (int) res;
-//
-//
-//            switch (resInt) {
-//                case 0:
-//                    results.get(0).add(res);
-//                    break;
-//                case 1:
-//                    results.get(1).add(res);
-//                    break;
-//                case 2:
-//                    results.get(2).add(res);
-//                    break;
-//                case 3:
-//                    results.get(3).add(res);
-//                    break;
-//                case 4:
-//                    results.get(4).add(res);
-//                    break;
-//                case 5:
-//                    results.get(5).add(res);
-//                    break;
-//            }
-//
-//        }
-//
-//        OptionalDouble[] averages = new OptionalDouble[6];
-//
-//        for (int i = 0; i < results.size(); i++) {
-//            averages[i] = results.get(i).stream().mapToDouble(a -> a).average();
-//        }
-//
-//        for (ArrayList<Double> result : results) {
-//            System.out.print(result.size() + " ");
-//        }
-//        System.out.println();
-//        int total = 0;
-//        for (OptionalDouble result : averages) {
-//            result.ifPresent(System.out::println);
-//        }
+        HeruGolfSolver golfSolver = new HeruGolfSolver(golfGenerator.getBoardState(), golfGenerator.getBallNumbers());
 
 //        int[] values = new int[]{1, 2, 5, 7, 12, 15};
 //        double[] ratios = new double[results.length];
@@ -67,6 +19,37 @@ public class Main {
 //            System.out.print(ratios[i] + " ");
 //        }
 
+    }
+
+    private static void printGaussianAveragesEtc() {
+        ArrayList<ArrayList<Double>> results = new ArrayList<>(8);
+        for (int i = 0; i < 8; i++) {
+            results.add(new ArrayList<Double>());
+        }
+
+        for (int i = 0; i < 1000; i++) {
+            double res = getGaussian(2.5, 1);
+            int resInt = (int) res;
+
+
+            results.get(resInt).add(res);
+
+        }
+
+        OptionalDouble[] averages = new OptionalDouble[8];
+
+        for (int i = 0; i < results.size(); i++) {
+            averages[i] = results.get(i).stream().mapToDouble(a -> a).average();
+        }
+
+        for (ArrayList<Double> result : results) {
+            System.out.print(result.size() + " ");
+        }
+        System.out.println();
+        int total = 0;
+        for (OptionalDouble result : averages) {
+            result.ifPresent(System.out::println);
+        }
     }
 
     private static double getGaussian(double aMean, double aVariance){

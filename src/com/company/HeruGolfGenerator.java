@@ -1,18 +1,25 @@
 package com.company;
 
+import com.company.HeruGolfUtil.*;
+
 import java.util.*;
+
+import static com.company.HeruGolfUtil.positionInDirection;
+import static com.company.HeruGolfUtil.printBoardState;
+
 
 public class HeruGolfGenerator {
 
     int width;
     int height;
     float hazardRatio = 0.1f;
-    float fillRatio = 0.7f;
+    float fillRatio = 0.8f;
     float basePropagation = 0.9f;
     int[][] boardState;
+    int[][] ballNumbers;
     int[] values = new int[]{1, 2, 3, 7, 9, 11, 13};
-    double mean = 2.7;
-    double variance = 1;
+//    double mean = 2.7;
+//    double variance = 1;
     Random rand;
 
     HeruGolfGenerator(int width, int height) {
@@ -20,12 +27,49 @@ public class HeruGolfGenerator {
         this.height = height;
         rand = new Random();
         boardState = new int[width][height];
+        ballNumbers = new int[width][height];
 
         generateHazards();
-//        int[] ballAmounts = generateBallsAmount();
         generateBallsAndHoles();
-        printBoardState();
         System.out.println();
+        printPlayableBoard(boardState);
+        System.out.println();
+        printBoardState(boardState);
+        System.out.println();
+        printBoardState(ballNumbers);
+        System.out.println();
+        System.out.println("Board fullness: " + getBoardFullness());
+        countBallsAndHoles();
+
+        removeSolution();
+        printPlayableBoard(boardState);
+    }
+
+    private void removeSolution() {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                if (boardState[i][j] == TileState.HORIZONTAL.getValue() ||
+                        boardState[i][j] == TileState.VERTICAL.getValue() ||
+                        boardState[i][j] == TileState.ATTEMPT.getValue()) {
+                    boardState[i][j] = TileState.EMPTY.getValue();
+                }
+            }
+        }
+    }
+
+    private void countBallsAndHoles() {
+        int balls = 0;
+        int holes = 0;
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                if (boardState[i][j] == TileState.BALL.getValue()) {
+                    balls++;
+                } else if (boardState[i][j] == TileState.HOLE.getValue()) {
+                    holes++;
+                }
+            }
+        }
+        System.out.println("Balls: " + balls + " Holes: " + holes);
     }
 
     private void generateBallsAndHoles() {
@@ -33,38 +77,50 @@ public class HeruGolfGenerator {
         float fullness = getBoardFullness();
         float propagationChance = basePropagation;
         while (fullness < fillRatio) {
-            placeLine(generateNextBall(), null);
+            int ballSize = generateNextBall();
+            if (!placeLine(ballSize, null)) {
+                System.out.println("Breaking ball: " + ballSize);
+                //TODO Could break on trying to fit an unusually large line in
+            }
+            int[][] newBoardState = getBoardStateCopy();
             fullness = getBoardFullness();
         }
 
     }
 
-    private boolean placeLine(int lineLength, Position startPosition) {
+    private boolean placeLine(int lineLength, Position startPosition) { //TODO Void?
         if (lineLength == 0) {
-            return false;
+            boardState[startPosition.getX()][startPosition.getY()] = TileState.HOLE.getValue();
+            return true;
         }
         int [][] attemptedTiles = getBoardStateCopy();
         boolean done = false;
+        boolean startPosProvided = (startPosition != null) ? true : false;
+
         while (!done) {
-            if (startPosition != null) {
+            if (startPosProvided) {
                 done = true;
             } else {
                 startPosition = getRandomOpenPosition(attemptedTiles);
+                if (startPosition == null) {
+                    System.out.println("No empty spots on board.");
+                    return false;
+                }
+                attemptedTiles[startPosition.getX()][startPosition.getY()] = TileState.ATTEMPT.getValue();
             }
 
-            if (startPosition == null) {
-                System.out.println("No empty spots on board.");
-                return false;
-            }
+
             ArrayList<Direction> directionList = new ArrayList<>(Arrays.asList(Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT));
             Collections.shuffle(directionList);
 
-            Position currentPosition = startPosition;
+
             for (Direction direction : directionList) {
+                Position currentPosition = startPosition;
                 ArrayList<Position> positionHistory = new ArrayList<>();
+                Position lineStartPosition = currentPosition;
                 for (int i = 0; i < lineLength; i++) {
                     Position nextPosition = positionInDirection(currentPosition, direction);
-                    if (nextPosition != null && boardState[nextPosition.getX()][nextPosition.getY()] == TileState.EMPTY.getValue()) {
+                    if (isInsideBounds(nextPosition) && boardState[nextPosition.getX()][nextPosition.getY()] == TileState.EMPTY.getValue()) {
                         positionHistory.add(nextPosition);
                         currentPosition = nextPosition;
                     } else {
@@ -72,7 +128,10 @@ public class HeruGolfGenerator {
                     }
                 }
                 if (positionHistory.size() == lineLength) {
-                    boardState[startPosition.getX()][startPosition.getY()] = TileState.BALL.getValue();
+                    if (!startPosProvided) {
+                        boardState[lineStartPosition.getX()][lineStartPosition.getY()] = TileState.BALL.getValue();
+                        ballNumbers[lineStartPosition.getX()][lineStartPosition.getY()] = lineLength;
+                    }
                     for (Position position : positionHistory) {
                         if (direction == Direction.UP || direction == Direction.DOWN) {
                             boardState[position.getX()][position.getY()] = TileState.VERTICAL.getValue();
@@ -84,39 +143,18 @@ public class HeruGolfGenerator {
                     float propagationChance = basePropagation - (fullness/10);
                     Position lastPosition = positionHistory.get(positionHistory.size()-1);
                     if (rand.nextFloat() < propagationChance) {
-                        if (placeLine(lineLength-1, lastPosition)) {
+                        if (!placeLine(lineLength - 1, lastPosition)) {
                             boardState[lastPosition.getX()][lastPosition.getY()] = TileState.HOLE.getValue();
                         }
                     } else {
                         boardState[lastPosition.getX()][lastPosition.getY()] = TileState.HOLE.getValue();
-                        return true;
                     }
+                    return true;
                 }
-
             }
-
-            attemptedTiles[startPosition.getX()][startPosition.getY()] = TileState.ATTEMPT.getValue();
         }
 
         return false;
-    }
-
-    private Position positionInDirection(Position currentPosition, Direction direction) {
-
-        Position newPosition;
-        switch (direction) {
-            case UP -> newPosition = new Position(currentPosition.getX(), currentPosition.getY() - 1);
-            case RIGHT -> newPosition = new Position(currentPosition.getX() + 1, currentPosition.getY());
-            case DOWN -> newPosition = new Position(currentPosition.getX(), currentPosition.getY() + 1);
-            case LEFT -> newPosition = new Position(currentPosition.getX() - 1, currentPosition.getY());
-            default -> { return null; }
-        }
-
-        if (isInsideBounds(newPosition)) {
-            return newPosition;
-        } else {
-            return null;
-        }
     }
 
     private boolean isInsideBounds(Position position) {
@@ -194,6 +232,8 @@ public class HeruGolfGenerator {
         for (int i = 0; i < maxBallSize; i++) {
             results.add(new ArrayList<>());
         }
+        double mean = Math.max(width, height)/2;
+        double variance = mean/3;
 
         for (int i = 0; i < 1000; i++) {
             double res = getGaussian(mean, variance);
@@ -220,8 +260,12 @@ public class HeruGolfGenerator {
 
     private int generateNextBall() {
         int intResult = 0;
-        while (intResult == 0) {
-            double result = getGaussian(mean, variance);
+        int min = 1;
+        int max = (int) (Math.max(width, height) * 0.8);
+        double mean = Math.max(width, height)/2;
+        double variance = mean/3;
+        while (intResult <= min || intResult > max) {
+            double result = getGaussian(Math.max(width, height)/2, variance);
             intResult = (int) result;
         }
         return intResult;
@@ -235,14 +279,26 @@ public class HeruGolfGenerator {
         return tilesUsed;
     }
 
-    private void printBoardState() {
-        for (int y = 0; y < height; y++) {
+    private void printPlayableBoard(int[][] board) {
+        for (int y = 0; y < height; y++) { //TODO use board height, not constant
             for (int x = 0; x < width; x++) {
-                System.out.print(boardState[x][y] + " ");
+                int tile = board[x][y];
+                String substString;
+                switch (tile) {
+                    case 0 -> substString = " ";
+                    case 1 -> substString = "-";
+                    case 2 -> substString = "|";
+                    case 3 -> substString = "X";
+                    case 4 -> substString = ballNumbers[x][y] + "";
+                    case 5 -> substString = "H";
+                    default -> substString = "ERROR";
+                }
+                System.out.print( substString + " ");
             }
             System.out.println();
         }
     }
+
     private void generateHazards() {
         int hazardNumber = Math.round(width * height * hazardRatio);
 
@@ -257,37 +313,11 @@ public class HeruGolfGenerator {
         return aMean + fRandom.nextGaussian() * aVariance;
     }
 
-    enum TileState {
-        EMPTY(0),
-        HORIZONTAL(1),
-        VERTICAL(2),
-        HAZARD(3),
-        BALL(4),
-        HOLE(5),
-        ATTEMPT(6);
-
-        private final int value;
-        TileState(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
+    public int[][] getBoardState() {
+        return boardState;
     }
 
-    enum Direction {
-        UP(0),
-        RIGHT(1),
-        DOWN(2),
-        LEFT(3);
-
-        private final int value;
-        Direction(int value) {
-            this.value = value;
-        }
-
-        public int getValue() { return value; }
+    public int[][] getBallNumbers() {
+        return ballNumbers;
     }
-
 }

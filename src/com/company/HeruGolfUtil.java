@@ -25,6 +25,34 @@ public class HeruGolfUtil {
         }
     }
 
+    public static void printPlayableBoard(int[][] boardState, int[][] ballNumbers) {
+        for (int y = 0; y < boardState[0].length; y++) { //TODO use board height, not constant
+            for (int x = 0; x < boardState.length; x++) {
+                int tile = boardState[x][y];
+                String substString;
+                switch (tile) {
+                    case 0 -> substString = " ";
+                    case 1 -> substString = "-";
+                    case 2 -> substString = "|";
+                    case 3 -> substString = "X";
+                    case 4 -> substString = ballNumbers[x][y] + "";
+                    case 5 -> substString = "H";
+                    default -> substString = "ERROR";
+                }
+                System.out.print( substString + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    public static int[][] getBoardStateCopy(int[][] boardState) {
+        int [][] copy = new int[boardState.length][];
+        for(int i = 0; i < boardState.length; i++) {
+            copy[i] = boardState[i].clone();
+        }
+        return copy;
+    }
+
     enum TileState {
         EMPTY(0),
         HORIZONTAL(1),

@@ -4,8 +4,7 @@ import com.company.HeruGolfUtil.*;
 
 import java.util.*;
 
-import static com.company.HeruGolfUtil.positionInDirection;
-import static com.company.HeruGolfUtil.printBoardState;
+import static com.company.HeruGolfUtil.*;
 
 
 public class HeruGolfGenerator {
@@ -31,18 +30,18 @@ public class HeruGolfGenerator {
 
         generateHazards();
         generateBallsAndHoles();
-        System.out.println();
-        printPlayableBoard(boardState);
-        System.out.println();
-        printBoardState(boardState);
-        System.out.println();
-        printBoardState(ballNumbers);
-        System.out.println();
-        System.out.println("Board fullness: " + getBoardFullness());
+//        System.out.println();
+//        printPlayableBoard(boardState);
+//        System.out.println();
+//        printBoardState(boardState);
+//        System.out.println();
+//        printBoardState(ballNumbers);
+//        System.out.println();
+//        System.out.println("Board fullness: " + getBoardFullness());
         countBallsAndHoles();
 
         removeSolution();
-        printPlayableBoard(boardState);
+//        printPlayableBoard(boardState);
     }
 
     private void removeSolution() {
@@ -69,20 +68,26 @@ public class HeruGolfGenerator {
                 }
             }
         }
-        System.out.println("Balls: " + balls + " Holes: " + holes);
+//        System.out.println("Balls: " + balls + " Holes: " + holes);
     }
 
     private void generateBallsAndHoles() {
 
         float fullness = getBoardFullness();
         float propagationChance = basePropagation;
+        int attempts = 0;
         while (fullness < fillRatio) {
             int ballSize = generateNextBall();
             if (!placeLine(ballSize, null)) {
-                System.out.println("Breaking ball: " + ballSize);
+//                System.out.println("Breaking ball: " + ballSize);
+                attempts++;
                 //TODO Could break on trying to fit an unusually large line in
+                if (attempts >= 10) {
+//                    System.out.println("Attempts failed");
+                    break;
+                }
             }
-            int[][] newBoardState = getBoardStateCopy();
+            int[][] newBoardState = getBoardStateCopy(boardState);
             fullness = getBoardFullness();
         }
 
@@ -93,7 +98,7 @@ public class HeruGolfGenerator {
             boardState[startPosition.getX()][startPosition.getY()] = TileState.HOLE.getValue();
             return true;
         }
-        int [][] attemptedTiles = getBoardStateCopy();
+        int [][] attemptedTiles = getBoardStateCopy(boardState);
         boolean done = false;
         boolean startPosProvided = (startPosition != null) ? true : false;
 
@@ -103,7 +108,7 @@ public class HeruGolfGenerator {
             } else {
                 startPosition = getRandomOpenPosition(attemptedTiles);
                 if (startPosition == null) {
-                    System.out.println("No empty spots on board.");
+//                    System.out.println("No empty spots on board.");
                     return false;
                 }
                 attemptedTiles[startPosition.getX()][startPosition.getY()] = TileState.ATTEMPT.getValue();
@@ -176,13 +181,6 @@ public class HeruGolfGenerator {
             case 3 : return Direction.LEFT;
         }
         return null;
-    }
-    private int[][] getBoardStateCopy() {
-        int [][] copy = new int[boardState.length][];
-        for(int i = 0; i < boardState.length; i++) {
-            copy[i] = boardState[i].clone();
-        }
-        return copy;
     }
 
     private Position getRandomOpenPosition(int[][] attemptedTiles) {

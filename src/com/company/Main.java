@@ -2,13 +2,34 @@ package com.company;
 
 import java.util.*;
 
+import static com.company.HeruGolfUtil.getBoardStateCopy;
+import static com.company.HeruGolfUtil.printPlayableBoard;
+
 public class Main {
 
     public static void main(String[] args) {
 
-        HeruGolfGenerator golfGenerator = new HeruGolfGenerator(5, 5);
+        int solvedPuzzles = 0;
+        int highestOccurence = 0;
+        int[][] bestBoardState = null;
+        int[][] bestBoardNumbers = null;
+        for (int i = 0; i < 1000000; i++) {
+            HeruGolfGenerator golfGenerator = new HeruGolfGenerator(8, 8);
+            HeruGolfSolver golfSolver = new HeruGolfSolver(getBoardStateCopy(golfGenerator.getBoardState()), getBoardStateCopy(golfGenerator.getBallNumbers()));
+            if (golfSolver.getSolved()) {
+                solvedPuzzles++;
+                if (golfSolver.getOccurrencesOfMultiplePossibilites() > highestOccurence) {
+                    highestOccurence = golfSolver.getOccurrencesOfMultiplePossibilites();
+                    bestBoardState = golfGenerator.getBoardState();
+                    bestBoardNumbers = golfGenerator.getBallNumbers();
+                }
+            }
 
-        HeruGolfSolver golfSolver = new HeruGolfSolver(golfGenerator.getBoardState(), golfGenerator.getBallNumbers());
+        }
+        System.out.println("Solved: " + solvedPuzzles + ", Highest occs: " + highestOccurence);
+
+        printPlayableBoard(bestBoardState, bestBoardNumbers);
+
 
 //        int[] values = new int[]{1, 2, 5, 7, 12, 15};
 //        double[] ratios = new double[results.length];

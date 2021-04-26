@@ -17,6 +17,8 @@ public class HeruGolfSolver {
     int[][] solvedNumbers;
     int width;
     int height;
+    int occurrencesOfMultiplePossibilites = 0;
+    boolean solved = false;
 
     /***
      *
@@ -32,16 +34,29 @@ public class HeruGolfSolver {
 
         solvedNumbers = new int[width][height];
 
+        int attemps = 0;
+
         while (!isSolved()) {
-            while (findProgress()) {
-                System.out.println("Found progress:");
-                printPlayableBoard(boardState);
+            if (findProgress()) {
+//                System.out.println("Found progress:");
+//                printPlayableBoard(boardState);
+            } else {
+                guessProgress();
+                return;
             }
-            guessProgress();
         }
 
-        System.out.println("Solved!");
-        printBoardState(boardState);
+        solved = true;
+//        System.out.println("Solved! Occ: " + occurrencesOfMultiplePossibilites);
+//        printPlayableBoard(boardState);
+    }
+
+    public int getOccurrencesOfMultiplePossibilites() {
+        return occurrencesOfMultiplePossibilites;
+    }
+
+    public boolean getSolved() {
+        return solved;
     }
 
     private boolean findProgress() {
@@ -55,14 +70,36 @@ public class HeruGolfSolver {
 
                     Position startPosition = new Position(i, j);
                     for (Direction direction : directionList) {
-                        //TODO If lineLength = 1, check if there is only 1 adjacaent hole
+                        //TODO If lineLength = 1, check if there is only 1 adjacaent hole, mark holes as used
                         ArrayList<Position> positionHistory = new ArrayList<>();
                         Position currentPosition = startPosition;
                         for (int k = 0; k < lineLength; k++) {
                             Position nextPosition = positionInDirection(currentPosition, direction);
-                            if (isInsideBounds(nextPosition) && (boardState[nextPosition.getX()][nextPosition.getY()] == TileState.EMPTY.getValue() || (k == lineLength - 1 && boardState[nextPosition.getX()][nextPosition.getY()] == TileState.HOLE.getValue()))) {
-                                positionHistory.add(nextPosition);
-                                currentPosition = nextPosition;
+//                            if (isInsideBounds(nextPosition) && lineLength == 1 && positionIsUnusedHole(nextPosition)) { //If linelength is 1, only allow holes
+//                                positionHistory.add(nextPosition);
+//                                currentPosition = nextPosition;
+//                            } else if (isInsideBounds(nextPosition) && (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition)))) {
+//                                positionHistory.add(nextPosition);
+//                                currentPosition = nextPosition;
+//                            } else {
+//                                break;
+//                            }
+                            if (isInsideBounds(nextPosition)) {
+                                if (lineLength == 1) {
+                                    if (positionIsUnusedHole(nextPosition)) {
+                                        positionHistory.add(nextPosition);
+                                        currentPosition = nextPosition;
+                                    } else {
+                                        break;
+                                    }
+                                } else if (lineLength != 1) {
+                                    if (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition))) {
+                                        positionHistory.add(nextPosition);
+                                        currentPosition = nextPosition;
+                                    } else {
+                                        break;
+                                    }
+                                }
                             } else {
                                 break;
                             }
@@ -71,6 +108,7 @@ public class HeruGolfSolver {
                             possibleLines.put(direction, positionHistory);
                         }
                     }
+
 
                     if (possibleLines.keySet().size() == 1) {
 
@@ -85,19 +123,31 @@ public class HeruGolfSolver {
                             }
                         }
 
-                        Position lastPosition = solutionLine.get(solutionLine.size()-1);
+                        Position lastPosition = solutionLine.get(solutionLine.size() - 1);
                         if (!(boardState[lastPosition.getX()][lastPosition.getY()] == TileState.HOLE.getValue())) {
                             boardState[lastPosition.getX()][lastPosition.getY()] = TileState.BALL.getValue();
                             ballNumbers[lastPosition.getX()][lastPosition.getY()] = lineLength - 1;
+                        } else {
+                            solvedNumbers[lastPosition.getX()][lastPosition.getY()] = 1;
                         }
                         solvedNumbers[i][j] = 1;
                         return true;
+                    } else {
+                        occurrencesOfMultiplePossibilites++;
                     }
                 }
             }
         }
 
         return false;
+    }
+
+    private boolean positionIsEmpty(Position position) {
+        return boardState[position.getX()][position.getY()] == TileState.EMPTY.getValue();
+    }
+
+    private boolean positionIsUnusedHole(Position position) {
+        return (boardState[position.getX()][position.getY()] == TileState.HOLE.getValue() && solvedNumbers[position.getX()][position.getY()] == 0);
     }
 
     private void printPlayableBoard(int[][] board) {
@@ -143,6 +193,6 @@ public class HeruGolfSolver {
     }
 
     private void guessProgress() {
-        
+        //Find a spot with multiple solutions, generate boards for each possibility, try to solve them
     }
 }

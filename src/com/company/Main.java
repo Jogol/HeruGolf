@@ -2,19 +2,19 @@ package com.company;
 
 import java.util.*;
 
-import static com.company.HeruGolfUtil.getBoardStateCopy;
-import static com.company.HeruGolfUtil.printPlayableBoard;
+import static com.company.HeruGolfUtil.*;
 
 public class Main {
 
     public static void main(String[] args) {
 
+        int attempts = 100;
         int solvedPuzzles = 0;
         int highestOccurence = 0;
         int[][] bestBoardState = null;
         int[][] bestBoardNumbers = null;
-        for (int i = 0; i < 1000000; i++) {
-            HeruGolfGenerator golfGenerator = new HeruGolfGenerator(8, 8);
+        for (int i = 0; i < attempts; i++) {
+            HeruGolfGenerator golfGenerator = new HeruGolfGenerator(10, 10);
             HeruGolfSolver golfSolver = new HeruGolfSolver(getBoardStateCopy(golfGenerator.getBoardState()), getBoardStateCopy(golfGenerator.getBallNumbers()));
             if (golfSolver.getSolved()) {
                 solvedPuzzles++;
@@ -25,11 +25,15 @@ public class Main {
                 }
             }
 
+            if (i % (attempts/100) == 0) {
+                System.out.println(i / (attempts/100));
+            }
         }
         System.out.println("Solved: " + solvedPuzzles + ", Highest occs: " + highestOccurence);
 
         printPlayableBoard(bestBoardState, bestBoardNumbers);
-
+        System.out.println();
+        printSaveableBoard(bestBoardState, bestBoardNumbers);
 
 //        int[] values = new int[]{1, 2, 5, 7, 12, 15};
 //        double[] ratios = new double[results.length];

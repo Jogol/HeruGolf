@@ -4,11 +4,11 @@ import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import com.company.HeruGolfUtil.*;
 
-import static com.company.HeruGolfUtil.positionInDirection;
-import static com.company.HeruGolfUtil.printBoardState;
+import static com.company.HeruGolfUtil.*;
 
 public class HeruGolfSolver {
 
@@ -19,6 +19,7 @@ public class HeruGolfSolver {
     int height;
     int occurrencesOfMultiplePossibilites = 0;
     boolean solved = false;
+    ArrayList<Direction> directionList = new ArrayList<>(Arrays.asList(Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT));
 
     /***
      *
@@ -60,30 +61,18 @@ public class HeruGolfSolver {
     }
 
     private boolean findProgress() {
-        ArrayList<Direction> directionList = new ArrayList<>(Arrays.asList(Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT));
         for (int i = 0; i < boardState.length; i++) {
             for (int j = 0; j < boardState[0].length; j++) {
                 if (boardState[i][j] == TileState.BALL.getValue() && solvedNumbers[i][j] == 0) {
                     int lineLength = ballNumbers[i][j];
-//                    ArrayList<ArrayList<Position>> possibleLines = new ArrayList<>(4);
                     HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
 
                     Position startPosition = new Position(i, j);
                     for (Direction direction : directionList) {
-                        //TODO If lineLength = 1, check if there is only 1 adjacaent hole, mark holes as used
                         ArrayList<Position> positionHistory = new ArrayList<>();
                         Position currentPosition = startPosition;
                         for (int k = 0; k < lineLength; k++) {
                             Position nextPosition = positionInDirection(currentPosition, direction);
-//                            if (isInsideBounds(nextPosition) && lineLength == 1 && positionIsUnusedHole(nextPosition)) { //If linelength is 1, only allow holes
-//                                positionHistory.add(nextPosition);
-//                                currentPosition = nextPosition;
-//                            } else if (isInsideBounds(nextPosition) && (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition)))) {
-//                                positionHistory.add(nextPosition);
-//                                currentPosition = nextPosition;
-//                            } else {
-//                                break;
-//                            }
                             if (isInsideBounds(nextPosition)) {
                                 if (lineLength == 1) {
                                     if (positionIsUnusedHole(nextPosition)) {
@@ -140,6 +129,105 @@ public class HeruGolfSolver {
         }
 
         return false;
+    }
+
+    private boolean solveBranch(Position startPosition, int[][] tempMoves, int lineLength) {
+
+        if (boardState[startPosition.getX()][startPosition.getY()] == TileState.HOLE.getValue()) {
+            int[][] boardStateCopy = getBoardStateCopy(boardState);
+            boardStateCopy[startPosition.getX()][startPosition.getY()] = TileState.SOLVED_HOLE.getValue();
+            int[][] solvedNumbersCopy = getBoardStateCopy(solvedNumbers); //TODO Duplicate?
+            solvedNumbersCopy[startPosition.getX()][startPosition.getY()] = 1;
+            return true;
+        } else if (lineLength == 0) {
+            return false;
+        }
+
+        ArrayList<Direction> specDirectionList = new ArrayList<>(directionList);
+
+        //Checking number of possible lines
+        HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
+        for (Direction direction : directionList) {
+            ArrayList<Position> positionHistory = new ArrayList<>();
+            Position currentPosition = startPosition;
+            for (int k = 0; k < lineLength; k++) {
+                Position nextPosition = positionInDirection(currentPosition, direction);
+                if (isInsideBounds(nextPosition) && tempMoves[nextPosition.getX()][nextPosition.getY()] != 1) {
+                    if (lineLength == 1) {
+                        if (positionIsUnusedHole(nextPosition)) {
+                            positionHistory.add(nextPosition);
+                            currentPosition = nextPosition;
+                        } else {
+                            break;
+                        }
+                    } else if (lineLength != 1) {
+                        if (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition))) {
+                            positionHistory.add(nextPosition);
+                            currentPosition = nextPosition;
+                        } else {
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+            if (positionHistory.size() == lineLength) {
+                possibleLines.put(direction, positionHistory);
+            }
+        }
+
+        //Solving lines
+        if (possibleLines.keySet().size() == 0) {
+            return false;
+        } else if (possibleLines.keySet().size() == 1) {
+
+            Direction solutionDirection = possibleLines.keySet().iterator().next();
+            ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
+            Position lastPosition = solutionLine.get(solutionLine.size() - 1);
+
+            for (int k = 0; k < solutionLine.size() - 1; k++) {
+                Position position = solutionLine.get(k);
+                tempMoves[position.getX()][position.getY()] = 1;
+            }
+
+            boolean result = solveBranch(lastPosition, tempMoves, lineLength - 1);
+
+            if (result) {
+                //mark path position and direction
+                return true;
+            } else {
+                return false;
+            }
+        } else if (possibleLines.keySet().size() > 1) {
+            int validDirectionCount = 0;
+            Direction validDirection = null;
+            for (Direction solutionDirection : possibleLines.keySet()) {
+                ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
+                Position lastPosition = solutionLine.get(solutionLine.size() - 1);
+                for (int k = 0; k < solutionLine.size() - 1; k++) {
+                    Position position = solutionLine.get(k);
+                    tempMoves[position.getX()][position.getY()] = 1;
+                }
+
+                boolean result = solveBranch(lastPosition, tempMoves, lineLength - 1);
+
+                if (result) {
+                    validDirection = solutionDirection;
+                    validDirectionCount++;
+                }
+            }
+
+            if (validDirectionCount == 1) {
+                return true;
+            } else {
+                occurrencesOfMultiplePossibilites++;
+                return false;
+            }
+
+        }
+
+        return true;
     }
 
     private boolean positionIsEmpty(Position position) {

@@ -25,6 +25,23 @@ public class HeruGolfUtil {
         }
     }
 
+    public static void printSaveableBoard(int[][] boardState, int[][] ballNumbers) {
+        for (int y = 0; y < boardState[0].length; y++) { //TODO use board height, not constant
+            String lineString = "";
+            for (int x = 0; x < boardState.length; x++) {
+                int tile = boardState[x][y];
+                String substString;
+                if (tile == 4) {
+                    substString = ballNumbers[x][y] + 10 + "";
+                } else {
+                    substString = tile + "";
+                }
+                lineString += substString + "\t";
+            }
+            System.out.println(lineString.substring(0, lineString.length() - 1));
+        }
+    }
+
     public static void printPlayableBoard(int[][] boardState, int[][] ballNumbers) {
         for (int y = 0; y < boardState[0].length; y++) { //TODO use board height, not constant
             for (int x = 0; x < boardState.length; x++) {
@@ -60,7 +77,8 @@ public class HeruGolfUtil {
         HAZARD(3),
         BALL(4),
         HOLE(5),
-        ATTEMPT(6);
+        ATTEMPT(6),
+        SOLVED_HOLE(7);
 
         private final int value;
         TileState(int value) {

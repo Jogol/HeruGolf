@@ -1,6 +1,7 @@
 package com.company;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.company.HeruGolfUtil.*;
 
@@ -8,9 +9,11 @@ public class Main {
 
     public static void main(String[] args) {
 
-        int attempts = 100;
+        final long startTime = System.nanoTime();
+        int attempts = 100000;
         int solvedPuzzles = 0;
         int highestOccurence = 0;
+        int unsolveable = 0;
         int[][] bestBoardState = null;
         int[][] bestBoardNumbers = null;
         for (int i = 0; i < attempts; i++) {
@@ -23,17 +26,21 @@ public class Main {
                     bestBoardState = golfGenerator.getBoardState();
                     bestBoardNumbers = golfGenerator.getBallNumbers();
                 }
+            } else {
+                unsolveable++;
+//                System.out.println("Unsolveable:");
+//                printSaveableBoard(golfGenerator.getBoardState(), golfGenerator.getBallNumbers());
             }
 
             if (i % (attempts/100) == 0) {
                 System.out.println(i / (attempts/100));
             }
         }
-        System.out.println("Solved: " + solvedPuzzles + ", Highest occs: " + highestOccurence);
 
         printPlayableBoard(bestBoardState, bestBoardNumbers);
         System.out.println();
         printSaveableBoard(bestBoardState, bestBoardNumbers);
+        System.out.println("Solved: " + solvedPuzzles + ", Highest occs: " + highestOccurence + " Unsolveable: " + unsolveable + "/" + attempts);
 
 //        int[] values = new int[]{1, 2, 5, 7, 12, 15};
 //        double[] ratios = new double[results.length];
@@ -43,6 +50,14 @@ public class Main {
 //            }
 //            System.out.print(ratios[i] + " ");
 //        }
+        final long nanos = System.nanoTime() - startTime;
+        //hh:mm:ss
+        String output = String.format("%02d:%02d:%02d",
+                TimeUnit.NANOSECONDS.toHours(nanos),
+                TimeUnit.NANOSECONDS.toMinutes(nanos) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(nanos)),
+                TimeUnit.NANOSECONDS.toSeconds(nanos) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(nanos)));
+        System.out.println(output);
+
 
     }
 

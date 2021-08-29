@@ -2,7 +2,7 @@ package com.company;
 
 public class HeruGolfUtil {
 
-    public static Position positionInDirection(Position currentPosition, Direction direction) {
+    public static Position nextPositionInDirection(Position currentPosition, Direction direction) {
 
         Position newPosition;
         switch (direction) {

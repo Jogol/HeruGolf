@@ -1,7 +1,5 @@
 package com.company;
 
-import com.company.HeruGolfUtil.*;
-
 import java.util.*;
 
 import static com.company.HeruGolfUtil.*;
@@ -38,7 +36,7 @@ public class HeruGolfGenerator {
 //        printBoardState(ballNumbers);
 //        System.out.println();
 //        System.out.println("Board fullness: " + getBoardFullness());
-        countBallsAndHoles();
+//        countBallsAndHoles();
 
         removeSolution();
 //        printPlayableBoard(boardState);
@@ -68,7 +66,7 @@ public class HeruGolfGenerator {
                 }
             }
         }
-//        System.out.println("Balls: " + balls + " Holes: " + holes);
+        System.out.println("Balls: " + balls + " Holes: " + holes);
     }
 
     private void generateBallsAndHoles() {
@@ -124,7 +122,7 @@ public class HeruGolfGenerator {
                 ArrayList<Position> positionHistory = new ArrayList<>();
                 Position lineStartPosition = currentPosition;
                 for (int i = 0; i < lineLength; i++) {
-                    Position nextPosition = positionInDirection(currentPosition, direction);
+                    Position nextPosition = nextPositionInDirection(currentPosition, direction);
                     if (isInsideBounds(nextPosition) && boardState[nextPosition.getX()][nextPosition.getY()] == TileState.EMPTY.getValue()) {
                         positionHistory.add(nextPosition);
                         currentPosition = nextPosition;

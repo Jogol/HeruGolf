@@ -1,12 +1,8 @@
 package com.company;
 
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
-
-import com.company.HeruGolfUtil.*;
 
 import static com.company.HeruGolfUtil.*;
 
@@ -65,6 +61,7 @@ public class HeruGolfSolver {
             for (int j = 0; j < boardState[0].length; j++) {
                 if (boardState[i][j] == TileState.BALL.getValue() && solvedNumbers[i][j] == 0) {
                     int lineLength = ballNumbers[i][j];
+
                     HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
 
                     Position startPosition = new Position(i, j);
@@ -72,7 +69,7 @@ public class HeruGolfSolver {
                         ArrayList<Position> positionHistory = new ArrayList<>();
                         Position currentPosition = startPosition;
                         for (int k = 0; k < lineLength; k++) {
-                            Position nextPosition = positionInDirection(currentPosition, direction);
+                            Position nextPosition = nextPositionInDirection(currentPosition, direction);
                             if (isInsideBounds(nextPosition)) {
                                 if (lineLength == 1) {
                                     if (positionIsUnusedHole(nextPosition)) {
@@ -98,11 +95,26 @@ public class HeruGolfSolver {
                         }
                     }
 
-
-                    if (possibleLines.keySet().size() == 1) {
-
-                        Direction solutionDirection = possibleLines.keySet().iterator().next();
+                    HashMap<Direction, ArrayList<Position>> filteredLines = new HashMap<>();
+                    for (Direction solutionDirection : possibleLines.keySet()) {
                         ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
+                        Position lastPosition = solutionLine.get(solutionLine.size() - 1);
+
+                        int[][] tempMoves = new int[width][height];
+                        for (int k = 0; k < solutionLine.size() - 1; k++) {
+                            Position position = solutionLine.get(k);
+                            tempMoves[position.getX()][position.getY()] = 1;
+                        }
+
+                        if (isSolveableBranch(lastPosition, tempMoves, lineLength - 1)) {
+                            filteredLines.put(solutionDirection, possibleLines.get(solutionDirection));
+                        }
+                    }
+
+                    if (filteredLines.keySet().size() == 1) {
+
+                        Direction solutionDirection = filteredLines.keySet().iterator().next();
+                        ArrayList<Position> solutionLine = filteredLines.get(solutionDirection);
                         for (int k = 0; k < solutionLine.size() - 1; k++) {
                             Position position = solutionLine.get(k);
                             if (solutionDirection == Direction.UP || solutionDirection == Direction.DOWN) {
@@ -131,19 +143,21 @@ public class HeruGolfSolver {
         return false;
     }
 
-    private boolean solveBranch(Position startPosition, int[][] tempMoves, int lineLength) {
+    /***
+     *
+     * @param startPosition Position on board from which to solve
+     * @param tempMoves To keep track of done moves so that we don't loop back on an already used space. Only tracks used or not (1/0)
+     * @param lineLength How long the line we are trying to fit is
+     * @return true if we were able to add the line
+     */
+    private boolean isSolveableBranch(Position startPosition, int[][] tempMoves, int lineLength) {
 
+        //If we are on top of a hole already it must be a valid and ending move
         if (boardState[startPosition.getX()][startPosition.getY()] == TileState.HOLE.getValue()) {
-            int[][] boardStateCopy = getBoardStateCopy(boardState);
-            boardStateCopy[startPosition.getX()][startPosition.getY()] = TileState.SOLVED_HOLE.getValue();
-            int[][] solvedNumbersCopy = getBoardStateCopy(solvedNumbers); //TODO Duplicate?
-            solvedNumbersCopy[startPosition.getX()][startPosition.getY()] = 1;
             return true;
-        } else if (lineLength == 0) {
+        } else if (lineLength == 0) { //If we are out of moves, this was a false path
             return false;
         }
-
-        ArrayList<Direction> specDirectionList = new ArrayList<>(directionList);
 
         //Checking number of possible lines
         HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
@@ -151,7 +165,7 @@ public class HeruGolfSolver {
             ArrayList<Position> positionHistory = new ArrayList<>();
             Position currentPosition = startPosition;
             for (int k = 0; k < lineLength; k++) {
-                Position nextPosition = positionInDirection(currentPosition, direction);
+                Position nextPosition = nextPositionInDirection(currentPosition, direction);
                 if (isInsideBounds(nextPosition) && tempMoves[nextPosition.getX()][nextPosition.getY()] != 1) {
                     if (lineLength == 1) {
                         if (positionIsUnusedHole(nextPosition)) {
@@ -180,54 +194,24 @@ public class HeruGolfSolver {
         //Solving lines
         if (possibleLines.keySet().size() == 0) {
             return false;
-        } else if (possibleLines.keySet().size() == 1) {
-
-            Direction solutionDirection = possibleLines.keySet().iterator().next();
-            ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
-            Position lastPosition = solutionLine.get(solutionLine.size() - 1);
-
-            for (int k = 0; k < solutionLine.size() - 1; k++) {
-                Position position = solutionLine.get(k);
-                tempMoves[position.getX()][position.getY()] = 1;
-            }
-
-            boolean result = solveBranch(lastPosition, tempMoves, lineLength - 1);
-
-            if (result) {
-                //mark path position and direction
-                return true;
-            } else {
-                return false;
-            }
-        } else if (possibleLines.keySet().size() > 1) {
-            int validDirectionCount = 0;
-            Direction validDirection = null;
+        } else {
+            boolean isSolveable = false;
             for (Direction solutionDirection : possibleLines.keySet()) {
                 ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
                 Position lastPosition = solutionLine.get(solutionLine.size() - 1);
+
                 for (int k = 0; k < solutionLine.size() - 1; k++) {
                     Position position = solutionLine.get(k);
                     tempMoves[position.getX()][position.getY()] = 1;
                 }
 
-                boolean result = solveBranch(lastPosition, tempMoves, lineLength - 1);
-
-                if (result) {
-                    validDirection = solutionDirection;
-                    validDirectionCount++;
+                if (isSolveableBranch(lastPosition, tempMoves, lineLength - 1)) {
+                    isSolveable = true;
                 }
             }
 
-            if (validDirectionCount == 1) {
-                return true;
-            } else {
-                occurrencesOfMultiplePossibilites++;
-                return false;
-            }
-
+            return isSolveable;
         }
-
-        return true;
     }
 
     private boolean positionIsEmpty(Position position) {
@@ -281,6 +265,6 @@ public class HeruGolfSolver {
     }
 
     private void guessProgress() {
-        //Find a spot with multiple solutions, generate boards for each possibility, try to solve them
+        //TODO Find a spot with multiple solutions, generate boards for each possibility, try to solve them
     }
 }

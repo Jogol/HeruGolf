@@ -12,6 +12,7 @@ public class HeruGolfGenerator {
     float hazardRatio = 0.1f;
     float fillRatio = 0.8f;
     float basePropagation = 0.9f;
+    int maxAttempts = 50;
     int[][] boardState;
     int[][] ballNumbers;
     int[] values = new int[]{1, 2, 3, 7, 9, 11, 13};
@@ -80,7 +81,7 @@ public class HeruGolfGenerator {
 //                System.out.println("Breaking ball: " + ballSize);
                 attempts++;
                 //TODO Could break on trying to fit an unusually large line in
-                if (attempts >= 10) {
+                if (attempts >= maxAttempts) {
 //                    System.out.println("Attempts failed");
                     break;
                 }
@@ -145,7 +146,7 @@ public class HeruGolfGenerator {
                     float fullness = getBoardFullness();
                     float propagationChance = basePropagation - (fullness/10);
                     Position lastPosition = positionHistory.get(positionHistory.size()-1);
-                    if (rand.nextFloat() < propagationChance) {
+                    if (rand.nextFloat() < propagationChance) { //Propagate
                         if (!placeLine(lineLength - 1, lastPosition)) {
                             boardState[lastPosition.getX()][lastPosition.getY()] = TileState.HOLE.getValue();
                         }

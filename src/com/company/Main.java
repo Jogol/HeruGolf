@@ -10,12 +10,14 @@ public class Main {
     public static void main(String[] args) {
 
         final long startTime = System.nanoTime();
-        int attempts = 100000;
+        int attempts = 100000; //26 minutes?
         int solvedPuzzles = 0;
         int highestOccurence = 0;
         int unsolveable = 0;
         int[][] bestBoardState = null;
         int[][] bestBoardNumbers = null;
+        ArrayList<int[][]> topList = new ArrayList<>();
+        ArrayList<int[][]> topListNumbers = new ArrayList<>();
         for (int i = 0; i < attempts; i++) {
             HeruGolfGenerator golfGenerator = new HeruGolfGenerator(10, 10);
             HeruGolfSolver golfSolver = new HeruGolfSolver(getBoardStateCopy(golfGenerator.getBoardState()), getBoardStateCopy(golfGenerator.getBallNumbers()));
@@ -25,6 +27,8 @@ public class Main {
                     highestOccurence = golfSolver.getOccurrencesOfMultiplePossibilites();
                     bestBoardState = golfGenerator.getBoardState();
                     bestBoardNumbers = golfGenerator.getBallNumbers();
+                    topList.add(bestBoardState);
+                    topListNumbers.add(bestBoardNumbers);
                 }
             } else {
                 unsolveable++;
@@ -37,10 +41,18 @@ public class Main {
             }
         }
 
-        printPlayableBoard(bestBoardState, bestBoardNumbers);
-        System.out.println();
-        printSaveableBoard(bestBoardState, bestBoardNumbers);
+//        printPlayableBoard(bestBoardState, bestBoardNumbers);
+//        System.out.println();
+//        printSaveableBoard(bestBoardState, bestBoardNumbers);
+        Collections.reverse(topList);
+        Collections.reverse(topListNumbers);
+        System.out.println("Toplist:\n");
+        for (int i = 0; i < Math.min(20, topList.size()); i++) {
+            printSaveableBoard(topList.get(i), topListNumbers.get(i));
+            System.out.println("\n");
+        }
         System.out.println("Solved: " + solvedPuzzles + ", Highest occs: " + highestOccurence + " Unsolveable: " + unsolveable + "/" + attempts);
+        System.out.println("Toplist size: " + topList.size());
 
 //        int[] values = new int[]{1, 2, 5, 7, 12, 15};
 //        double[] ratios = new double[results.length];

@@ -29,6 +29,9 @@ public class Main {
                     bestBoardNumbers = golfGenerator.getBallNumbers();
                     topList.add(bestBoardState);
                     topListNumbers.add(bestBoardNumbers);
+                } else if (golfSolver.getOccurrencesOfMultiplePossibilites() > 100) {
+                    topList.add(golfGenerator.getBoardState());
+                    topListNumbers.add(golfGenerator.getBallNumbers());
                 }
             } else {
                 unsolveable++;
@@ -47,8 +50,8 @@ public class Main {
         Collections.reverse(topList);
         Collections.reverse(topListNumbers);
         System.out.println("Toplist:\n");
-        for (int i = 0; i < Math.min(20, topList.size()); i++) {
-            printSaveableBoard(topList.get(i), topListNumbers.get(i));
+        for (int i = 0; i < Math.min(100, topList.size()); i++) {
+            printSaveableBoardToFile("PuzzleH" + i+1,topList.get(i), topListNumbers.get(i));
             System.out.println("\n");
         }
         System.out.println("Solved: " + solvedPuzzles + ", Highest occs: " + highestOccurence + " Unsolveable: " + unsolveable + "/" + attempts);

@@ -1,5 +1,10 @@
 package com.company;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 public class HeruGolfUtil {
 
     public static Position nextPositionInDirection(Position currentPosition, Direction direction) {
@@ -40,6 +45,42 @@ public class HeruGolfUtil {
             }
             System.out.println(lineString.substring(0, lineString.length() - 1));
         }
+    }
+
+    public static void printSaveableBoardToFile(String fileName, int[][] boardState, int[][] ballNumbers) {
+        File file = new File("C:\\Users\\Jonat\\Dev\\IdeaProjects\\HeruGolf\\src\\GeneratedBoards\\" + fileName + ".txt");
+        BufferedWriter writer = null;
+        StringBuilder str = new StringBuilder();
+        try {
+            writer = new BufferedWriter(new FileWriter(file));
+            for (int y = 0; y < boardState[0].length; y++) { //TODO use board height, not constant
+                String lineString = "";
+                for (int x = 0; x < boardState.length; x++) {
+                    int tile = boardState[x][y];
+                    String substString;
+                    if (tile == 4) {
+                        substString = ballNumbers[x][y] + 10 + "";
+                    } else {
+                        substString = tile + "";
+                    }
+                    lineString += substString + "\t";
+                }
+                str.append(lineString.substring(0, lineString.length() - 1) + "\n");
+            }
+            str.setLength(str.length() - 1);
+            writer.write(str.toString());
+        } catch (IOException e) {
+            throw new IllegalStateException("Print fucky");
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    throw new IllegalStateException("Close fucky");
+                }
+            }
+        }
+
     }
 
     public static void printPlayableBoard(int[][] boardState, int[][] ballNumbers) {

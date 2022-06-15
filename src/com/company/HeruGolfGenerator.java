@@ -99,7 +99,7 @@ public class HeruGolfGenerator {
         }
         int [][] attemptedTiles = getBoardStateCopy(boardState);
         boolean done = false;
-        boolean startPosProvided = (startPosition != null) ? true : false;
+        boolean startPosProvided = startPosition != null;
 
         while (!done) {
             if (startPosProvided) {
@@ -162,24 +162,20 @@ public class HeruGolfGenerator {
     }
 
     private boolean isInsideBounds(Position position) {
-        if (position.getX() >= 0 && position.getX() < width && position.getY() >= 0 && position.getY() < height) {
-            return true;
-        } else {
-            return false;
-        }
+        return position != null && position.getX() >= 0 && position.getX() < width && position.getY() >= 0 && position.getY() < height;
     }
 
     private Direction getRandomDirection() {
         Random rand = new Random();
         int val = rand.nextInt(4);
 
-        switch (val) {
-            case 0 : return Direction.UP;
-            case 1 : return Direction.RIGHT;
-            case 2 : return Direction.DOWN;
-            case 3 : return Direction.LEFT;
-        }
-        return null;
+        return switch (val) {
+            case 0 -> Direction.UP;
+            case 1 -> Direction.RIGHT;
+            case 2 -> Direction.DOWN;
+            case 3 -> Direction.LEFT;
+            default -> null;
+        };
     }
 
     private Position getRandomOpenPosition(int[][] attemptedTiles) {
@@ -229,7 +225,7 @@ public class HeruGolfGenerator {
         for (int i = 0; i < maxBallSize; i++) {
             results.add(new ArrayList<>());
         }
-        double mean = Math.max(width, height)/2;
+        double mean = Math.max((double) width, height)/2;
         double variance = mean/3;
 
         for (int i = 0; i < 1000; i++) {
@@ -240,7 +236,7 @@ public class HeruGolfGenerator {
                 results.get(resInt).add(res);
             }
 
-            float tilesUsed = estimateTilesUsed(results);
+            int tilesUsed = estimateTilesUsed(results);
             if (tilesUsed > (width * height * fillRatio)) {
                 int[] ballsAmounts = new int[maxBallSize];
                 for (int j = 0; j < results.size(); j++) {
@@ -259,10 +255,10 @@ public class HeruGolfGenerator {
         int intResult = 0;
         int min = 1;
         int max = (int) (Math.max(width, height) * 0.8);
-        double mean = Math.max(width, height)/2;
+        double mean = Math.max((double) width, height)/2;
         double variance = mean/3;
         while (intResult <= min || intResult > max) {
-            double result = getGaussian(Math.max(width, height)/2, variance);
+            double result = getGaussian(Math.max((double) width, height)/2, variance);
             intResult = (int) result;
         }
         return intResult;

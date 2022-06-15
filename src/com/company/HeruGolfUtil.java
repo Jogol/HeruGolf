@@ -22,7 +22,7 @@ public class HeruGolfUtil {
     }
 
     public static void printBoardState(int[][] board) {
-        for (int y = 0; y < board[0].length; y++) { //TODO use board height, not constant
+        for (int y = 0; y < board[0].length; y++) {
             for (int x = 0; x < board.length; x++) {
                 System.out.print(board[x][y] + " ");
             }
@@ -30,9 +30,9 @@ public class HeruGolfUtil {
         }
     }
 
-    public static void printSaveableBoard(int[][] boardState, int[][] ballNumbers) {
-        for (int y = 0; y < boardState[0].length; y++) { //TODO use board height, not constant
-            String lineString = "";
+    public static void printSavableBoard(int[][] boardState, int[][] ballNumbers) {
+        for (int y = 0; y < boardState[0].length; y++) {
+            StringBuilder lineString = new StringBuilder();
             for (int x = 0; x < boardState.length; x++) {
                 int tile = boardState[x][y];
                 String substString;
@@ -41,20 +41,20 @@ public class HeruGolfUtil {
                 } else {
                     substString = tile + "";
                 }
-                lineString += substString + "\t";
+                lineString.append(substString).append("\t");
             }
             System.out.println(lineString.substring(0, lineString.length() - 1));
         }
     }
 
-    public static void printSaveableBoardToFile(String fileName, int[][] boardState, int[][] ballNumbers) {
+    public static void printSavableBoardToFile(String fileName, int[][] boardState, int[][] ballNumbers) {
         File file = new File("C:\\Users\\Jonat\\Dev\\IdeaProjects\\HeruGolf\\src\\GeneratedBoards\\" + fileName + ".txt");
         BufferedWriter writer = null;
         StringBuilder str = new StringBuilder();
         try {
             writer = new BufferedWriter(new FileWriter(file));
-            for (int y = 0; y < boardState[0].length; y++) { //TODO use board height, not constant
-                String lineString = "";
+            for (int y = 0; y < boardState[0].length; y++) {
+                StringBuilder lineString = new StringBuilder();
                 for (int x = 0; x < boardState.length; x++) {
                     int tile = boardState[x][y];
                     String substString;
@@ -63,9 +63,9 @@ public class HeruGolfUtil {
                     } else {
                         substString = tile + "";
                     }
-                    lineString += substString + "\t";
+                    lineString.append(substString).append("\t");
                 }
-                str.append(lineString.substring(0, lineString.length() - 1) + "\n");
+                str.append(lineString.substring(0, lineString.length() - 1)).append("\n");
             }
             str.setLength(str.length() - 1);
             writer.write(str.toString());

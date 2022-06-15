@@ -15,6 +15,7 @@ public class HeruGolfSolver {
     int height;
     int occurrencesOfMultiplePossibilites = 0;
     boolean solved = false;
+    boolean tryGuessingFlag = false;
     ArrayList<Direction> directionList = new ArrayList<>(Arrays.asList(Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT));
 
     /***
@@ -135,6 +136,9 @@ public class HeruGolfSolver {
                         return true;
                     } else {
                         occurrencesOfMultiplePossibilites++;
+                        if (tryGuessingFlag) {
+
+                        }
                     }
                 }
             }
@@ -146,7 +150,7 @@ public class HeruGolfSolver {
     /***
      *
      * @param startPosition Position on board from which to solve
-     * @param tempMoves To keep track of done moves so that we don't loop back on an already used space. Only tracks used or not (1/0)
+     * @param tempMoves To keep track of done moves so that we don't loop back on an already used space. Only tracks used (1) or not used(0)
      * @param lineLength How long the line we are trying to fit is
      * @return true if we were able to add the line
      */

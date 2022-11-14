@@ -268,7 +268,94 @@ public class HeruGolfSolver {
         }
     }
 
-    private void guessProgress() {
+    private boolean guessProgress() {
         //TODO Find a spot with multiple solutions, generate boards for each possibility, try to solve them
+        for (int i = 0; i < boardState.length; i++) {
+            for (int j = 0; j < boardState[0].length; j++) {
+                if (boardState[i][j] == TileState.BALL.getValue() && solvedNumbers[i][j] == 0) {
+                    int lineLength = ballNumbers[i][j];
+
+                    HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
+
+                    Position startPosition = new Position(i, j);
+                    for (Direction direction : directionList) {
+                        ArrayList<Position> positionHistory = new ArrayList<>();
+                        Position currentPosition = startPosition;
+                        for (int k = 0; k < lineLength; k++) {
+                            Position nextPosition = nextPositionInDirection(currentPosition, direction);
+                            if (isInsideBounds(nextPosition)) {
+                                if (lineLength == 1) {
+                                    if (positionIsUnusedHole(nextPosition)) {
+                                        positionHistory.add(nextPosition);
+                                        currentPosition = nextPosition;
+                                    } else {
+                                        break;
+                                    }
+                                } else if (lineLength != 1) {
+                                    if (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition))) {
+                                        positionHistory.add(nextPosition);
+                                        currentPosition = nextPosition;
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                        if (positionHistory.size() == lineLength) {
+                            possibleLines.put(direction, positionHistory);
+                        }
+                    }
+
+                    HashMap<Direction, ArrayList<Position>> filteredLines = new HashMap<>();
+                    for (Direction solutionDirection : possibleLines.keySet()) {
+                        ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
+                        Position lastPosition = solutionLine.get(solutionLine.size() - 1);
+
+                        int[][] tempMoves = new int[width][height];
+                        for (int k = 0; k < solutionLine.size() - 1; k++) {
+                            Position position = solutionLine.get(k);
+                            tempMoves[position.getX()][position.getY()] = 1;
+                        }
+
+                        if (isSolveableBranch(lastPosition, tempMoves, lineLength - 1)) {
+                            filteredLines.put(solutionDirection, possibleLines.get(solutionDirection));
+                        }
+                    }
+
+                    if (filteredLines.keySet().size() == 1) {
+
+                        Direction solutionDirection = filteredLines.keySet().iterator().next();
+                        ArrayList<Position> solutionLine = filteredLines.get(solutionDirection);
+                        for (int k = 0; k < solutionLine.size() - 1; k++) {
+                            Position position = solutionLine.get(k);
+                            if (solutionDirection == Direction.UP || solutionDirection == Direction.DOWN) {
+                                boardState[position.getX()][position.getY()] = TileState.VERTICAL.getValue();
+                            } else if (solutionDirection == Direction.RIGHT || solutionDirection == Direction.LEFT) {
+                                boardState[position.getX()][position.getY()] = TileState.HORIZONTAL.getValue();
+                            }
+                        }
+
+                        Position lastPosition = solutionLine.get(solutionLine.size() - 1);
+                        if (!(boardState[lastPosition.getX()][lastPosition.getY()] == TileState.HOLE.getValue())) {
+                            boardState[lastPosition.getX()][lastPosition.getY()] = TileState.BALL.getValue();
+                            ballNumbers[lastPosition.getX()][lastPosition.getY()] = lineLength - 1;
+                        } else {
+                            solvedNumbers[lastPosition.getX()][lastPosition.getY()] = 1;
+                        }
+                        solvedNumbers[i][j] = 1;
+                        return true;
+                    } else {
+                        occurrencesOfMultiplePossibilites++;
+                        if (tryGuessingFlag) {
+
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }

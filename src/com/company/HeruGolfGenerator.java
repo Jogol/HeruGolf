@@ -273,7 +273,7 @@ public class HeruGolfGenerator {
     }
 
     private void printPlayableBoard(int[][] board) {
-        for (int y = 0; y < height; y++) { //TODO use board height, not constant
+        for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int tile = board[x][y];
                 String substString;

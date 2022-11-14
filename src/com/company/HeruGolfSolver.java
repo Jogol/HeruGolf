@@ -80,7 +80,8 @@ public class HeruGolfSolver {
                                         break;
                                     }
                                 } else if (lineLength != 1) {
-                                    if (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition))) {
+                                    boolean isLastPosition = lineLength - 1 == k;
+                                    if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {//TODO New rule: can jump over water
                                         positionHistory.add(nextPosition);
                                         currentPosition = nextPosition;
                                     } else {
@@ -147,6 +148,10 @@ public class HeruGolfSolver {
         return false;
     }
 
+    private boolean isValidPositionForPath(Position nextPosition, boolean isLastPosition) {
+        return (positionIsEmpty(nextPosition) || (!isLastPosition && positionIsWater(nextPosition)));
+    }
+
     /***
      *
      * @param startPosition Position on board from which to solve
@@ -179,7 +184,8 @@ public class HeruGolfSolver {
                             break;
                         }
                     } else if (lineLength != 1) {
-                        if (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition))) {
+                        boolean isLastPosition = lineLength - 1 == k;
+                        if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {//TODO New rule: can jump over water
                             positionHistory.add(nextPosition);
                             currentPosition = nextPosition;
                         } else {
@@ -220,6 +226,10 @@ public class HeruGolfSolver {
 
     private boolean positionIsEmpty(Position position) {
         return boardState[position.getX()][position.getY()] == TileState.EMPTY.getValue();
+    }
+
+    private boolean positionIsWater(Position position) {
+        return boardState[position.getX()][position.getY()] == TileState.WATER.getValue();
     }
 
     private boolean positionIsUnusedHole(Position position) {
@@ -283,7 +293,7 @@ public class HeruGolfSolver {
                         Position currentPosition = startPosition;
                         for (int k = 0; k < lineLength; k++) {
                             Position nextPosition = nextPositionInDirection(currentPosition, direction);
-                            if (isInsideBounds(nextPosition)) {
+                            if (isInsideBounds(nextPosition)) { //TODO Remove duplication
                                 if (lineLength == 1) {
                                     if (positionIsUnusedHole(nextPosition)) {
                                         positionHistory.add(nextPosition);
@@ -292,7 +302,8 @@ public class HeruGolfSolver {
                                         break;
                                     }
                                 } else if (lineLength != 1) {
-                                    if (positionIsEmpty(nextPosition) || (k == lineLength - 1 && positionIsUnusedHole(nextPosition))) {
+                                    boolean isLastPosition = lineLength - 1 == k;
+                                    if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {//TODO New rule: can jump over water
                                         positionHistory.add(nextPosition);
                                         currentPosition = nextPosition;
                                     } else {

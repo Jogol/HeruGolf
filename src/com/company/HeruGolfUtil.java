@@ -47,15 +47,15 @@ public class HeruGolfUtil {
         }
     }
 
-    public static void printSavableBoardToFile(String fileName, int[][] boardState, int[][] ballNumbers) {
+    public static void printSavableBoardToFile(String fileName, int[][] boardState, int[][] ballNumbers) { //TODO Flip?
         File file = new File("C:\\Users\\Jonat\\Dev\\IdeaProjects\\HeruGolf\\src\\GeneratedBoards\\" + fileName + ".txt");
         BufferedWriter writer = null;
         StringBuilder str = new StringBuilder();
         try {
             writer = new BufferedWriter(new FileWriter(file));
-            for (int y = 0; y < boardState[0].length; y++) {
+            for (int x = 0; x < boardState[0].length; x++) {
                 StringBuilder lineString = new StringBuilder();
-                for (int x = 0; x < boardState.length; x++) {
+                for (int y = 0; y < boardState.length; y++) {
                     int tile = boardState[x][y];
                     String substString;
                     if (tile == 4) {
@@ -115,7 +115,7 @@ public class HeruGolfUtil {
         EMPTY(0),
         HORIZONTAL(1),
         VERTICAL(2),
-        HAZARD(3),
+        WATER(3),
         BALL(4),
         HOLE(5),
         ATTEMPT(6),

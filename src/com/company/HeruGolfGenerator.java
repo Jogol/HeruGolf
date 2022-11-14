@@ -9,7 +9,7 @@ public class HeruGolfGenerator {
 
     int width;
     int height;
-    float hazardRatio = 0.1f;
+    float waterRatio = 0.1f;
     float fillRatio = 0.8f;
     float basePropagation = 0.9f;
     int maxAttempts = 50;
@@ -27,7 +27,7 @@ public class HeruGolfGenerator {
         boardState = new int[width][height];
         ballNumbers = new int[width][height];
 
-        generateHazards();
+        generateWaterHazards();
         generateBallsAndHoles();
 //        System.out.println();
 //        printPlayableBoard(boardState);
@@ -124,7 +124,8 @@ public class HeruGolfGenerator {
                 Position lineStartPosition = currentPosition;
                 for (int i = 0; i < lineLength; i++) {
                     Position nextPosition = nextPositionInDirection(currentPosition, direction);
-                    if (isInsideBounds(nextPosition) && boardState[nextPosition.getX()][nextPosition.getY()] == TileState.EMPTY.getValue()) {
+                    boolean isLastPosition = lineLength - 1 == i;
+                    if (isInsideBounds(nextPosition) && isAValidPath(nextPosition, isLastPosition)) {
                         positionHistory.add(nextPosition);
                         currentPosition = nextPosition;
                     } else {
@@ -159,6 +160,12 @@ public class HeruGolfGenerator {
         }
 
         return false;
+    }
+
+    private boolean isAValidPath(Position nextPosition, boolean isLastPosition) {
+        boolean isEmpty = boardState[nextPosition.getX()][nextPosition.getY()] == TileState.EMPTY.getValue();
+        boolean isWater = boardState[nextPosition.getX()][nextPosition.getY()] == TileState.WATER.getValue();
+        return (isEmpty || (isWater && !isLastPosition));
     }
 
     private boolean isInsideBounds(Position position) {
@@ -292,12 +299,12 @@ public class HeruGolfGenerator {
         }
     }
 
-    private void generateHazards() {
-        int hazardNumber = Math.round(width * height * hazardRatio);
+    private void generateWaterHazards() {
+        int waterBlockCount = Math.round(width * height * waterRatio);
 
         Random rand = new Random();
-        for (int i = 0; i < hazardNumber; i++) {
-            boardState[rand.nextInt(width)][rand.nextInt(height)] = TileState.HAZARD.getValue();
+        for (int i = 0; i < waterBlockCount; i++) {
+            boardState[rand.nextInt(width)][rand.nextInt(height)] = TileState.WATER.getValue();
         }
     }
 

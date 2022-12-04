@@ -119,7 +119,9 @@ public class HeruGolfUtil {
         BALL(4),
         HOLE(5),
         ATTEMPT(6),
-        SOLVED_HOLE(7);
+        SOLVED_HOLE(7),
+        WATER_PLUS_HORIZONTAL(31),
+        WATER_PLUS_VERTICAL(32);
 
         private final int value;
         TileState(int value) {

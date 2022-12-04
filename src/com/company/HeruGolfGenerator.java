@@ -1,5 +1,6 @@
 package com.company;
 
+import java.io.*;
 import java.util.*;
 
 import static com.company.HeruGolfUtil.*;
@@ -9,7 +10,7 @@ public class HeruGolfGenerator {
 
     int width;
     int height;
-    float waterRatio = 0.1f;
+    float waterRatio = 0.2f;
     float fillRatio = 0.8f;
     float basePropagation = 0.9f;
     int maxAttempts = 50;
@@ -27,20 +28,11 @@ public class HeruGolfGenerator {
         boardState = new int[width][height];
         ballNumbers = new int[width][height];
 
-        generateWaterHazards();
+        //generateWaterHazards();
+        boardState = readBoardStateFromFile("C:\\Users\\Jonat\\Dev\\IdeaProjects\\HeruGolf\\src\\ManualWater\\symmetricWater.txt");
         generateBallsAndHoles();
-//        System.out.println();
-//        printPlayableBoard(boardState);
-//        System.out.println();
-//        printBoardState(boardState);
-//        System.out.println();
-//        printBoardState(ballNumbers);
-//        System.out.println();
-//        System.out.println("Board fullness: " + getBoardFullness());
-//        countBallsAndHoles();
 
         removeSolution();
-//        printPlayableBoard(boardState);
     }
 
     private void removeSolution() {
@@ -50,6 +42,8 @@ public class HeruGolfGenerator {
                         boardState[i][j] == TileState.VERTICAL.getValue() ||
                         boardState[i][j] == TileState.ATTEMPT.getValue()) {
                     boardState[i][j] = TileState.EMPTY.getValue();
+                } else if (boardState[i][j] == TileState.WATER_PLUS_HORIZONTAL.getValue() || boardState[i][j] == TileState.WATER_PLUS_VERTICAL.getValue()) {
+                    boardState[i][j] = TileState.WATER.getValue();
                 }
             }
         }
@@ -73,7 +67,6 @@ public class HeruGolfGenerator {
     private void generateBallsAndHoles() {
 
         float fullness = getBoardFullness();
-        float propagationChance = basePropagation;
         int attempts = 0;
         while (fullness < fillRatio) {
             int ballSize = generateNextBall();
@@ -99,7 +92,7 @@ public class HeruGolfGenerator {
         }
         int [][] attemptedTiles = getBoardStateCopy(boardState);
         boolean done = false;
-        boolean startPosProvided = startPosition != null;
+        boolean startPosProvided = startPosition != null; //False the first time we go in here
 
         while (!done) {
             if (startPosProvided) {
@@ -139,9 +132,17 @@ public class HeruGolfGenerator {
                     }
                     for (Position position : positionHistory) {
                         if (direction == Direction.UP || direction == Direction.DOWN) {
-                            boardState[position.getX()][position.getY()] = TileState.VERTICAL.getValue();
+                            if (boardState[position.getX()][position.getY()] == TileState.WATER.getValue()) { //TODO Seems kinda slow
+                                boardState[position.getX()][position.getY()] = TileState.WATER_PLUS_VERTICAL.getValue();
+                            } else {
+                                boardState[position.getX()][position.getY()] = TileState.VERTICAL.getValue();
+                            }
                         } else if (direction == Direction.RIGHT || direction == Direction.LEFT) {
-                            boardState[position.getX()][position.getY()] = TileState.HORIZONTAL.getValue();
+                            if (boardState[position.getX()][position.getY()] == TileState.WATER.getValue()) {
+                                boardState[position.getX()][position.getY()] = TileState.WATER_PLUS_HORIZONTAL.getValue();
+                            } else {
+                                boardState[position.getX()][position.getY()] = TileState.HORIZONTAL.getValue();
+                            }
                         }
                     }
                     float fullness = getBoardFullness();
@@ -258,15 +259,15 @@ public class HeruGolfGenerator {
         return null;
     }
 
-    private int generateNextBall() {
+    public int generateNextBall() {
         int intResult = 0;
         int min = 1;
         int max = (int) (Math.max(width, height) * 0.8);
         double mean = Math.max((double) width, height)/2;
-        double variance = mean/3;
-        while (intResult <= min || intResult > max) {
+        double variance = mean/6;
+        while (intResult < min || intResult > max) {
             double result = getGaussian(Math.max((double) width, height)/2, variance);
-            intResult = (int) result;
+            intResult = (int) result - 1;
         }
         return intResult;
     }
@@ -306,6 +307,28 @@ public class HeruGolfGenerator {
         for (int i = 0; i < waterBlockCount; i++) {
             boardState[rand.nextInt(width)][rand.nextInt(height)] = TileState.WATER.getValue();
         }
+    }
+
+    private int[][] readBoardStateFromFile(String fileName) {
+        ArrayList<String[]> data = new ArrayList<>(); //initializing a new ArrayList out of String[]'s
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(fileName)))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] lineItems = line.split("\t"); //splitting the line and adding its items in String[]
+                data.add(lineItems); //adding the splitted line array to the ArrayList
+            }
+            int[][] matrix = new int[data.get(0).length][data.size()];
+            for (int i = 0; i < matrix[0].length; i++) {
+                for (int j = 0; j < matrix.length; j++) {
+                    matrix[j][i] = Integer.parseInt(data.get(i)[j]);
+                }
+            }
+            return matrix;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
     }
 
     private double getGaussian(double aMean, double aVariance){

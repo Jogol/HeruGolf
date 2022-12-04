@@ -14,6 +14,7 @@ public class HeruGolfSolver {
     int width;
     int height;
     int occurrencesOfMultiplePossibilites = 0;
+    int score = 0;
     boolean solved = false;
     boolean tryGuessingFlag = false;
     ArrayList<Direction> directionList = new ArrayList<>(Arrays.asList(Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT));
@@ -35,11 +36,12 @@ public class HeruGolfSolver {
         int attemps = 0;
 
         while (!isSolved()) {
-            if (findProgress()) {
+            if (findProgressFromBall()) {
 //                System.out.println("Found progress:");
 //                printPlayableBoard(boardState);
             } else {
-                guessProgress();
+                //findProgressFromHole();
+                //guessProgress(); //TODO Currently not allowing puzzles that require guesses
                 return;
             }
         }
@@ -49,15 +51,24 @@ public class HeruGolfSolver {
 //        printPlayableBoard(boardState);
     }
 
+    private boolean findProgressFromHole() { //TODO Implement
+        return false;
+    }
+
     public int getOccurrencesOfMultiplePossibilites() {
         return occurrencesOfMultiplePossibilites;
+    }
+
+    public int getScore() {
+        return score;
     }
 
     public boolean getSolved() {
         return solved;
     }
 
-    private boolean findProgress() {
+    private boolean findProgressFromBall() { //TODO Find progress from a hole (eg only one ball can go to that hole)
+        score++; //Just starting another lap speaks for the complexity
         for (int i = 0; i < boardState.length; i++) {
             for (int j = 0; j < boardState[0].length; j++) {
                 if (boardState[i][j] == TileState.BALL.getValue() && solvedNumbers[i][j] == 0) {
@@ -110,11 +121,12 @@ public class HeruGolfSolver {
 
                         if (isSolveableBranch(lastPosition, tempMoves, lineLength - 1)) {
                             filteredLines.put(solutionDirection, possibleLines.get(solutionDirection));
+                            score += 5; //The more simultaneously possible routes the better
                         }
                     }
 
                     if (filteredLines.keySet().size() == 1) {
-
+                        score -= 5; //Only having 1 option is "bad" but necessary eventually
                         Direction solutionDirection = filteredLines.keySet().iterator().next();
                         ArrayList<Position> solutionLine = filteredLines.get(solutionDirection);
                         for (int k = 0; k < solutionLine.size() - 1; k++) {
@@ -132,6 +144,7 @@ public class HeruGolfSolver {
                             ballNumbers[lastPosition.getX()][lastPosition.getY()] = lineLength - 1;
                         } else {
                             solvedNumbers[lastPosition.getX()][lastPosition.getY()] = 1;
+                            score-= 10; //If a final solution is too quick to end it won't generate many points above and thus becoming net negative here.
                         }
                         solvedNumbers[i][j] = 1;
                         return true;
@@ -237,7 +250,7 @@ public class HeruGolfSolver {
     }
 
     private void printPlayableBoard(int[][] board) {
-        for (int y = 0; y < height; y++) { //TODO use board height, not constant
+        for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int tile = board[x][y];
                 String substString;
@@ -276,97 +289,5 @@ public class HeruGolfSolver {
         } else {
             return false;
         }
-    }
-
-    private boolean guessProgress() {
-        //TODO Find a spot with multiple solutions, generate boards for each possibility, try to solve them
-        for (int i = 0; i < boardState.length; i++) {
-            for (int j = 0; j < boardState[0].length; j++) {
-                if (boardState[i][j] == TileState.BALL.getValue() && solvedNumbers[i][j] == 0) {
-                    int lineLength = ballNumbers[i][j];
-
-                    HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
-
-                    Position startPosition = new Position(i, j);
-                    for (Direction direction : directionList) {
-                        ArrayList<Position> positionHistory = new ArrayList<>();
-                        Position currentPosition = startPosition;
-                        for (int k = 0; k < lineLength; k++) {
-                            Position nextPosition = nextPositionInDirection(currentPosition, direction);
-                            if (isInsideBounds(nextPosition)) { //TODO Remove duplication
-                                if (lineLength == 1) {
-                                    if (positionIsUnusedHole(nextPosition)) {
-                                        positionHistory.add(nextPosition);
-                                        currentPosition = nextPosition;
-                                    } else {
-                                        break;
-                                    }
-                                } else if (lineLength != 1) {
-                                    boolean isLastPosition = lineLength - 1 == k;
-                                    if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {//TODO New rule: can jump over water
-                                        positionHistory.add(nextPosition);
-                                        currentPosition = nextPosition;
-                                    } else {
-                                        break;
-                                    }
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                        if (positionHistory.size() == lineLength) {
-                            possibleLines.put(direction, positionHistory);
-                        }
-                    }
-
-                    HashMap<Direction, ArrayList<Position>> filteredLines = new HashMap<>();
-                    for (Direction solutionDirection : possibleLines.keySet()) {
-                        ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
-                        Position lastPosition = solutionLine.get(solutionLine.size() - 1);
-
-                        int[][] tempMoves = new int[width][height];
-                        for (int k = 0; k < solutionLine.size() - 1; k++) {
-                            Position position = solutionLine.get(k);
-                            tempMoves[position.getX()][position.getY()] = 1;
-                        }
-
-                        if (isSolveableBranch(lastPosition, tempMoves, lineLength - 1)) {
-                            filteredLines.put(solutionDirection, possibleLines.get(solutionDirection));
-                        }
-                    }
-
-                    if (filteredLines.keySet().size() == 1) {
-
-                        Direction solutionDirection = filteredLines.keySet().iterator().next();
-                        ArrayList<Position> solutionLine = filteredLines.get(solutionDirection);
-                        for (int k = 0; k < solutionLine.size() - 1; k++) {
-                            Position position = solutionLine.get(k);
-                            if (solutionDirection == Direction.UP || solutionDirection == Direction.DOWN) {
-                                boardState[position.getX()][position.getY()] = TileState.VERTICAL.getValue();
-                            } else if (solutionDirection == Direction.RIGHT || solutionDirection == Direction.LEFT) {
-                                boardState[position.getX()][position.getY()] = TileState.HORIZONTAL.getValue();
-                            }
-                        }
-
-                        Position lastPosition = solutionLine.get(solutionLine.size() - 1);
-                        if (!(boardState[lastPosition.getX()][lastPosition.getY()] == TileState.HOLE.getValue())) {
-                            boardState[lastPosition.getX()][lastPosition.getY()] = TileState.BALL.getValue();
-                            ballNumbers[lastPosition.getX()][lastPosition.getY()] = lineLength - 1;
-                        } else {
-                            solvedNumbers[lastPosition.getX()][lastPosition.getY()] = 1;
-                        }
-                        solvedNumbers[i][j] = 1;
-                        return true;
-                    } else {
-                        occurrencesOfMultiplePossibilites++;
-                        if (tryGuessingFlag) {
-
-                        }
-                    }
-                }
-            }
-        }
-
-        return false;
     }
 }

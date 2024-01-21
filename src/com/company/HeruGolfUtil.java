@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class HeruGolfUtil {
 
@@ -48,10 +50,12 @@ public class HeruGolfUtil {
     }
 
     public static void printSavableBoardToFile(String fileName, int[][] boardState, int[][] ballNumbers) { //TODO Flip?
-        File file = new File("C:\\Users\\Jonat\\Dev\\IdeaProjects\\HeruGolf\\src\\GeneratedBoards\\" + fileName + ".txt");
+
+        File file = new File("generations" + File.separator + fileName + ".txt");
         BufferedWriter writer = null;
         StringBuilder str = new StringBuilder();
         try {
+            Files.createDirectories(Paths.get("generations"));
             writer = new BufferedWriter(new FileWriter(file));
             for (int x = 0; x < boardState[0].length; x++) {
                 StringBuilder lineString = new StringBuilder();

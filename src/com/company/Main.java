@@ -1,79 +1,100 @@
 package com.company;
 
+import org.apache.log4j.Logger;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static com.company.HeruGolfUtil.*;
+import static com.company.HeruGolfUtil.getBoardStateCopy;
+import static com.company.HeruGolfUtil.printSavableBoardToFile;
 
 public class Main {
 
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    static Logger log = Logger.getLogger("com.company.Main");
     public static void main(String[] args) {
 
         final long startTime = System.nanoTime();
-        int attempts = 600000 * 240; //600000 ~ 1 min
+        int lapMinutes = 60;
+        int keepSize = 50;
+
+        if (args.length == 2) {
+            lapMinutes = Integer.parseInt(args[0]);
+            keepSize = Integer.parseInt(args[1]);
+        }
+        int attempts = 600000 * lapMinutes; //600000 ~ 1 min
         int solvedPuzzles = 0;
-        int unsolvable = 0;
-        int[][] bestBoardState = null;
-        int[][] bestBoardNumbers = null;
-        List<Puzzle> puzzleToplist = new ArrayList<>();
-        for (int i = 0; i < attempts; i++) {
-            HeruGolfGenerator golfGenerator = new HeruGolfGenerator(10, 10);
-            HeruGolfSolver golfSolver = new HeruGolfSolver(getBoardStateCopy(golfGenerator.getBoardState()), getBoardStateCopy(golfGenerator.getBallNumbers()));
-            Puzzle puzzle = null;
-            if (golfSolver.getSolved()) {
-                solvedPuzzles++;
-                if (golfSolver.getScore() > 10) {
-                    puzzleToplist.add(new Puzzle(golfGenerator.boardState, golfGenerator.ballNumbers, golfSolver.getScore()));
-                }
-            } else {
-                unsolvable++;
+        int lap = 0;
+
+        while (true) {
+            long lapStartTime = System.nanoTime();
+            lap++;
+            long runningTime = System.nanoTime() - startTime;
+            String runningTimeString = String.format("%02d:%02d:%02d",
+                    TimeUnit.NANOSECONDS.toHours(runningTime),
+                    TimeUnit.NANOSECONDS.toMinutes(runningTime) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(runningTime)),
+                    TimeUnit.NANOSECONDS.toSeconds(runningTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(runningTime)));
+            log.info("Starting lap " + lap + " at time: " + LocalDateTime.now() + " with runtime: " + runningTimeString);
+            int unsolvable = 0;
+
+            List<Puzzle> puzzleToplist = new ArrayList<>();
+            for (int i = 0; i < attempts; i++) {
+                HeruGolfGenerator golfGenerator = new HeruGolfGenerator(10, 10);
+                HeruGolfSolver golfSolver = new HeruGolfSolver(getBoardStateCopy(golfGenerator.getBoardState()), getBoardStateCopy(golfGenerator.getBallNumbers()));
+                if (golfSolver.getSolved()) {
+                    solvedPuzzles++;
+                    if (golfSolver.getScore() > 1000) {
+                        puzzleToplist.add(new Puzzle(golfGenerator.boardState, golfGenerator.ballNumbers, golfSolver.getScore()));
+                    }
+                } else {
+                    unsolvable++;
 //                System.out.println("Unsolvable:");
 //                printSavableBoard(golfGenerator.getBoardState(), golfGenerator.getBallNumbers());
-            }
+                }
 
-            if ((i+1) % (attempts/100) == 0) {
-                int percentDone = (i+1) / (attempts/100);
-                long tempTime = System.nanoTime() - startTime;
-                //hh:mm:ss
-                String output = String.format("%02d:%02d:%02d",
-                        TimeUnit.NANOSECONDS.toHours(tempTime),
-                        TimeUnit.NANOSECONDS.toMinutes(tempTime) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(tempTime)),
-                        TimeUnit.NANOSECONDS.toSeconds(tempTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(tempTime)));
-                long totalTimeNano = tempTime/percentDone * 100;
-                String totalTimeString = String.format("%02d:%02d:%02d",
-                        TimeUnit.NANOSECONDS.toHours(totalTimeNano),
-                        TimeUnit.NANOSECONDS.toMinutes(totalTimeNano) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(totalTimeNano)),
-                        TimeUnit.NANOSECONDS.toSeconds(totalTimeNano) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(totalTimeNano)));
-                System.out.println(percentDone + " - " + "Current: " + output + " - " + "Estimated total: " + totalTimeString);
+                if ((i+1) % (attempts/100) == 0) {
+                    int percentDone = (i+1) / (attempts/100);
+                    long tempTime = System.nanoTime() - lapStartTime;
+                    //hh:mm:ss
+                    String output = String.format("%02d:%02d:%02d",
+                            TimeUnit.NANOSECONDS.toHours(tempTime),
+                            TimeUnit.NANOSECONDS.toMinutes(tempTime) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(tempTime)),
+                            TimeUnit.NANOSECONDS.toSeconds(tempTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(tempTime)));
+                    long totalTimeNano = tempTime/percentDone * 100;
+                    String totalTimeString = String.format("%02d:%02d:%02d",
+                            TimeUnit.NANOSECONDS.toHours(totalTimeNano),
+                            TimeUnit.NANOSECONDS.toMinutes(totalTimeNano) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(totalTimeNano)),
+                            TimeUnit.NANOSECONDS.toSeconds(totalTimeNano) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(totalTimeNano)));
+                    log.info(percentDone + " - " + "Current: " + output + " - " + "Estimated total: " + totalTimeString);
 
-                if (puzzleToplist.size() > 10000) {
-                    trimList(puzzleToplist, 100);
+                    if (puzzleToplist.size() > 1000) {
+                        trimList(puzzleToplist, keepSize);
+                    }
                 }
             }
-        }
 
-        if (puzzleToplist.size() > 50) {
-            trimList(puzzleToplist, 50);
-        }
+            if (puzzleToplist.size() > keepSize) {
+                trimList(puzzleToplist, keepSize);
+            }
 
 //        printPlayableBoard(bestBoardState, bestBoardNumbers);
 //        System.out.println();
 
-        if (puzzleToplist.size() == 0) {
-            throw new IllegalStateException("No puzzles in toplist!"); //Nåt gick fel
-        }
-        String timeStamp = LocalDateTime.now().format(formatter);
-        for (int i = 0; i < puzzleToplist.size(); i++) {
-            Puzzle puzzle = puzzleToplist.get(i);
-            String puzzleName = "Alternating" + (i+1) + "_" + timeStamp;
-            printSavableBoardToFile(puzzleName,puzzle.getBoardState(), puzzle.getBallState());
-            System.out.println(puzzleName + " " + puzzle.getScore());
-        }
-        System.out.println("Solved: " + solvedPuzzles + ", Highest score: " + puzzleToplist.get(0).getScore() + " Unsolvable: " + unsolvable + "/" + attempts);
-        System.out.println("Toplist size: " + puzzleToplist.size());
+            if (puzzleToplist.size() == 0) {
+                log.info("No boards created this run.");
+                continue;
+            }
+            String timeStamp = LocalDateTime.now().format(formatter);
+            for (int i = 0; i < puzzleToplist.size(); i++) {
+                Puzzle puzzle = puzzleToplist.get(i);
+                String puzzleName = "A" + puzzle.getScore() + "_" + (i+1) + "_" + timeStamp;
+                printSavableBoardToFile(puzzleName, puzzle.getBoardState(), puzzle.getBallState());
+                //log.info(puzzleName + " " + puzzle.getScore());
+            }
+            log.info("Solved: " + solvedPuzzles + ", Highest score: " + puzzleToplist.get(0).getScore() + " Unsolvable: " + unsolvable + "/" + attempts);
+            log.info("Toplist size: " + puzzleToplist.size());
 
 //        int[] values = new int[]{1, 2, 5, 7, 12, 15};
 //        double[] ratios = new double[results.length];
@@ -83,15 +104,14 @@ public class Main {
 //            }
 //            System.out.print(ratios[i] + " ");
 //        }
-        final long nanos = System.nanoTime() - startTime;
-        //hh:mm:ss
-        String output = String.format("%02d:%02d:%02d",
-                TimeUnit.NANOSECONDS.toHours(nanos),
-                TimeUnit.NANOSECONDS.toMinutes(nanos) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(nanos)),
-                TimeUnit.NANOSECONDS.toSeconds(nanos) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(nanos)));
-        System.out.println("Total time: " + output);
-
-
+            final long nanos = System.nanoTime() - startTime;
+            //hh:mm:ss
+            String output = String.format("%02d:%02d:%02d",
+                    TimeUnit.NANOSECONDS.toHours(nanos),
+                    TimeUnit.NANOSECONDS.toMinutes(nanos) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(nanos)),
+                    TimeUnit.NANOSECONDS.toSeconds(nanos) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(nanos)));
+            log.info("Total time: " + output);
+        }
     }
 
     private static void trimList(List<?> list, int newLength) {

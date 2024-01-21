@@ -51,10 +51,6 @@ public class HeruGolfSolver {
 //        printPlayableBoard(boardState);
     }
 
-    private boolean findProgressFromHole() { //TODO Implement
-        return false;
-    }
-
     public int getOccurrencesOfMultiplePossibilites() {
         return occurrencesOfMultiplePossibilites;
     }
@@ -154,6 +150,19 @@ public class HeruGolfSolver {
 
                         }
                     }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean findProgressFromHole() { //TODO Implement
+        score++; //Just starting another lap speaks for the complexity
+        for (int i = 0; i < boardState.length; i++) {
+            for (int j = 0; j < boardState[0].length; j++) {
+                if (boardState[i][j] == TileState.HOLE.getValue() && boardState[i][j] == TileState.BALL.getValue()) {
+
                 }
             }
         }

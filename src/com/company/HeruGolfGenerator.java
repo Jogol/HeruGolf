@@ -28,8 +28,8 @@ public class HeruGolfGenerator {
         boardState = new int[width][height];
         ballNumbers = new int[width][height];
 
-        //generateWaterHazards();
-        boardState = readBoardStateFromFile("C:\\Users\\Jonat\\Dev\\IdeaProjects\\HeruGolf\\src\\ManualWater\\symmetricWater.txt");
+        generateWaterHazards();
+        //boardState = readBoardStateFromFile("C:\\Users\\Jonat\\Dev\\IdeaProjects\\HeruGolf\\src\\ManualWater\\symmetricWater.txt");
         generateBallsAndHoles();
 
         removeSolution();

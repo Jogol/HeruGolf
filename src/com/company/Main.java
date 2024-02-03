@@ -84,7 +84,7 @@ public class Main {
 
             if (puzzleToplist.size() == 0) {
                 log.info("No boards created this run.");
-                continue;
+                //continue;
             }
             String timeStamp = LocalDateTime.now().format(formatter);
             for (int i = 0; i < puzzleToplist.size(); i++) {
@@ -93,7 +93,8 @@ public class Main {
                 printSavableBoardToFile(puzzleName, puzzle.getBoardState(), puzzle.getBallState());
                 //log.info(puzzleName + " " + puzzle.getScore());
             }
-            log.info("Solved: " + solvedPuzzles + ", Highest score: " + puzzleToplist.get(0).getScore() + " Unsolvable: " + unsolvable + "/" + attempts);
+            int highestScore = puzzleToplist.size() == 0 ? 0 : puzzleToplist.get(0).getScore();
+            log.info("Solved: " + solvedPuzzles + ", Highest score: " + highestScore + " Unsolvable: " + unsolvable + "/" + attempts);
             log.info("Toplist size: " + puzzleToplist.size());
 
 //        int[] values = new int[]{1, 2, 5, 7, 12, 15};

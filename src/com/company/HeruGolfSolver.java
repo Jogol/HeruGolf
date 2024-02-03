@@ -1,8 +1,6 @@
 package com.company;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 
 import static com.company.HeruGolfUtil.*;
 
@@ -11,6 +9,9 @@ public class HeruGolfSolver {
     int[][] boardState;
     int[][] ballNumbers;
     int[][] solvedNumbers;
+    HashMap<Position, Position> possibleHoleBallPairs;
+    HashMap<Position, Position> ballSource; //Key: lastPosition, value: currentPosition
+    HashMap<Position, Integer> ballsForHoleCounter;
     int width;
     int height;
     int occurrencesOfMultiplePossibilites = 0;
@@ -32,21 +33,36 @@ public class HeruGolfSolver {
         height = boardState[0].length;
 
         solvedNumbers = new int[width][height];
+        ballSource = new HashMap<>();
 
         int attemps = 0;
+//        //TODO Ska nog inte göra detta, vill bara ha de som är relevanta för "varvet" i findProgressFromBall
+//        for (int i = 0; i < boardState.length; i++) {
+//            for (int j = 0; j < boardState[0].length; j++) {
+//                if (boardState[i][j] == TileState.BALL.getValue()) {
+//                    possibleBallHolePairs.put(new Position(i, j), new Position(i, j));
+//                }
+//            }
+//        }
 
+        boolean gotHoleProgress = false;
         while (!isSolved()) {
+            possibleHoleBallPairs = new HashMap<>();
+            ballsForHoleCounter = new HashMap<>();
             if (findProgressFromBall()) {
 //                System.out.println("Found progress:");
 //                printPlayableBoard(boardState);
+            } else if (findProgressFromHole()) { //TODO Add difficulty scoring
+                //Found progress
+                gotHoleProgress = true;
             } else {
-                //findProgressFromHole();
                 //guessProgress(); //TODO Currently not allowing puzzles that require guesses
                 return;
             }
         }
 
         solved = true;
+
 //        System.out.println("Solved! Occ: " + occurrencesOfMultiplePossibilites);
 //        printPlayableBoard(boardState);
     }
@@ -70,61 +86,18 @@ public class HeruGolfSolver {
                 if (boardState[i][j] == TileState.BALL.getValue() && solvedNumbers[i][j] == 0) {
                     int lineLength = ballNumbers[i][j];
 
-                    HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
+                    Position currentPosition = new Position(i, j);
+                    HashMap<Direction, ArrayList<Position>> traversableLines = getTraversableLines(currentPosition, lineLength);
 
-                    Position startPosition = new Position(i, j);
-                    for (Direction direction : directionList) {
-                        ArrayList<Position> positionHistory = new ArrayList<>();
-                        Position currentPosition = startPosition;
-                        for (int k = 0; k < lineLength; k++) {
-                            Position nextPosition = nextPositionInDirection(currentPosition, direction);
-                            if (isInsideBounds(nextPosition)) {
-                                if (lineLength == 1) {
-                                    if (positionIsUnusedHole(nextPosition)) {
-                                        positionHistory.add(nextPosition);
-                                        currentPosition = nextPosition;
-                                    } else {
-                                        break;
-                                    }
-                                } else if (lineLength != 1) {
-                                    boolean isLastPosition = lineLength - 1 == k;
-                                    if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {//TODO New rule: can jump over water
-                                        positionHistory.add(nextPosition);
-                                        currentPosition = nextPosition;
-                                    } else {
-                                        break;
-                                    }
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                        if (positionHistory.size() == lineLength) {
-                            possibleLines.put(direction, positionHistory);
-                        }
-                    }
+                    HashMap<Direction, ArrayList<Position>> endingInHoleLines = keepLinesEndingInAHole(currentPosition, traversableLines, lineLength);
 
-                    HashMap<Direction, ArrayList<Position>> filteredLines = new HashMap<>();
-                    for (Direction solutionDirection : possibleLines.keySet()) {
-                        ArrayList<Position> solutionLine = possibleLines.get(solutionDirection);
-                        Position lastPosition = solutionLine.get(solutionLine.size() - 1);
-
-                        int[][] tempMoves = new int[width][height];
-                        for (int k = 0; k < solutionLine.size() - 1; k++) {
-                            Position position = solutionLine.get(k);
-                            tempMoves[position.getX()][position.getY()] = 1;
-                        }
-
-                        if (isSolveableBranch(lastPosition, tempMoves, lineLength - 1)) {
-                            filteredLines.put(solutionDirection, possibleLines.get(solutionDirection));
-                            score += 5; //The more simultaneously possible routes the better
-                        }
-                    }
-
-                    if (filteredLines.keySet().size() == 1) {
+                    if (endingInHoleLines.keySet().size() == 1) {
+                        //This means we only have 1 direction to go that ends in a hole
                         score -= 5; //Only having 1 option is "bad" but necessary eventually
-                        Direction solutionDirection = filteredLines.keySet().iterator().next();
-                        ArrayList<Position> solutionLine = filteredLines.get(solutionDirection);
+                        Direction solutionDirection = endingInHoleLines.keySet().iterator().next();
+                        ArrayList<Position> solutionLine = endingInHoleLines.get(solutionDirection);
+
+                        //We only do moves that are guaranteed, so here we draw that move into the board
                         for (int k = 0; k < solutionLine.size() - 1; k++) {
                             Position position = solutionLine.get(k);
                             if (solutionDirection == Direction.UP || solutionDirection == Direction.DOWN) {
@@ -136,12 +109,16 @@ public class HeruGolfSolver {
 
                         Position lastPosition = solutionLine.get(solutionLine.size() - 1);
                         if (!(boardState[lastPosition.getX()][lastPosition.getY()] == TileState.HOLE.getValue())) {
+                            //If we aren't done yet, we pretend this is the starting point for a new ball
                             boardState[lastPosition.getX()][lastPosition.getY()] = TileState.BALL.getValue();
                             ballNumbers[lastPosition.getX()][lastPosition.getY()] = lineLength - 1;
+                            ballSource.put(lastPosition, currentPosition);
                         } else {
+                            //If lastPosition is a hole, mark it as solved, unsure why
                             solvedNumbers[lastPosition.getX()][lastPosition.getY()] = 1;
                             score-= 10; //If a final solution is too quick to end it won't generate many points above and thus becoming net negative here.
                         }
+                        //Since we succeeded in making a move, mark the ball that went here as solved
                         solvedNumbers[i][j] = 1;
                         return true;
                     } else {
@@ -157,21 +134,64 @@ public class HeruGolfSolver {
         return false;
     }
 
-    private boolean findProgressFromHole() { //TODO Implement
-        score++; //Just starting another lap speaks for the complexity
-        for (int i = 0; i < boardState.length; i++) {
-            for (int j = 0; j < boardState[0].length; j++) {
-                if (boardState[i][j] == TileState.HOLE.getValue() && boardState[i][j] == TileState.BALL.getValue()) {
+    /***
+     * Looks in all directions around start position and return all path that allow for 1 step
+     * @param startPosition the position of the ball before moving
+     * @param lineLength the number on the ball going here
+     * @return
+     */
+    private HashMap<Direction, ArrayList<Position>> getTraversableLines(Position startPosition, int lineLength) {
+        HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
 
+        for (Direction direction : directionList) {
+            ArrayList<Position> positionHistory = new ArrayList<>();
+            Position currentPosition = startPosition;
+            for (int k = 0; k < lineLength; k++) {
+                Position nextPosition = nextPositionInDirection(currentPosition, direction);
+                if (isInsideBounds(nextPosition)) {
+                    boolean isLastPosition = lineLength - 1 == k;
+                    if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {
+                        positionHistory.add(nextPosition);
+                        currentPosition = nextPosition;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
                 }
             }
+            if (positionHistory.size() == lineLength) {
+                possibleLines.put(direction, positionHistory);
+            }
         }
-
-        return false;
+        return possibleLines;
     }
 
-    private boolean isValidPositionForPath(Position nextPosition, boolean isLastPosition) {
-        return (positionIsEmpty(nextPosition) || (!isLastPosition && positionIsWater(nextPosition)));
+    /***
+     * Among the lines that allow for 1 step, return the ones that actually end in a hole eventually
+     * This is checked recursively
+     * @param traversableLines
+     * @param lineLength
+     * @return
+     */
+    private HashMap<Direction, ArrayList<Position>> keepLinesEndingInAHole(Position originalPos, HashMap<Direction, ArrayList<Position>> traversableLines, int lineLength) {
+        HashMap<Direction, ArrayList<Position>> filteredLines = new HashMap<>();
+        for (Direction solutionDirection : traversableLines.keySet()) {
+            ArrayList<Position> solutionLine = traversableLines.get(solutionDirection);
+            Position lastPosition = solutionLine.get(solutionLine.size() - 1);
+
+            int[][] tempMoves = new int[width][height];
+            for (int k = 0; k < solutionLine.size() - 1; k++) {
+                Position position = solutionLine.get(k);
+                tempMoves[position.getX()][position.getY()] = 1;
+            }
+
+            if (isSolveableBranch(originalPos, lastPosition, tempMoves, lineLength - 1)) {
+                filteredLines.put(solutionDirection, traversableLines.get(solutionDirection));
+                score += 5; //The more simultaneously possible routes the better
+            }
+        }
+        return filteredLines;
     }
 
     /***
@@ -181,10 +201,14 @@ public class HeruGolfSolver {
      * @param lineLength How long the line we are trying to fit is
      * @return true if we were able to add the line
      */
-    private boolean isSolveableBranch(Position startPosition, int[][] tempMoves, int lineLength) {
+    private boolean isSolveableBranch(Position originalPosition, Position startPosition, int[][] tempMoves, int lineLength) {
 
         //If we are on top of a hole already it must be a valid and ending move
         if (boardState[startPosition.getX()][startPosition.getY()] == TileState.HOLE.getValue()) {
+            possibleHoleBallPairs.put(startPosition, originalPosition); //TODO Detta blir sista steget innan hålet, men är inte garanterat att vi ritat ut hela vägen dit
+            //TODO Make the value an object that holds count and ball origin to speed things up?
+            //Allegedly makes value 1 if none existed, otherwise adds existing + 1
+            ballsForHoleCounter.merge(startPosition, 1, Integer::sum);
             return true;
         } else if (lineLength == 0) { //If we are out of moves, this was a false path
             return false;
@@ -198,21 +222,12 @@ public class HeruGolfSolver {
             for (int k = 0; k < lineLength; k++) {
                 Position nextPosition = nextPositionInDirection(currentPosition, direction);
                 if (isInsideBounds(nextPosition) && tempMoves[nextPosition.getX()][nextPosition.getY()] != 1) {
-                    if (lineLength == 1) {
-                        if (positionIsUnusedHole(nextPosition)) {
-                            positionHistory.add(nextPosition);
-                            currentPosition = nextPosition;
-                        } else {
-                            break;
-                        }
-                    } else if (lineLength != 1) {
-                        boolean isLastPosition = lineLength - 1 == k;
-                        if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {//TODO New rule: can jump over water
-                            positionHistory.add(nextPosition);
-                            currentPosition = nextPosition;
-                        } else {
-                            break;
-                        }
+                    boolean isLastPosition = lineLength - 1 == k;
+                    if (isValidPositionForPath(nextPosition, isLastPosition) || (isLastPosition && positionIsUnusedHole(nextPosition))) {
+                        positionHistory.add(nextPosition);
+                        currentPosition = nextPosition;
+                    } else {
+                        break;
                     }
                 } else {
                     break;
@@ -237,13 +252,109 @@ public class HeruGolfSolver {
                     tempMoves[position.getX()][position.getY()] = 1;
                 }
 
-                if (isSolveableBranch(lastPosition, tempMoves, lineLength - 1)) {
+                if (isSolveableBranch(originalPosition, lastPosition, tempMoves, lineLength - 1)) {
                     isSolveable = true;
+                    break;
                 }
             }
 
             return isSolveable;
         }
+    }
+
+    private boolean findProgressFromHole() { //TODO Implement
+//        Collection<Position> values = possibleBallHolePairs.values();
+//        List<Position> uniqueHoleList = values.stream().filter(i -> Collections.frequency(values, i) == 1).toList();
+        for (Position hole : ballsForHoleCounter.keySet()) {
+            if (ballsForHoleCounter.get(hole) == 1) {
+                Position ballPos = possibleHoleBallPairs.get(hole);
+                do {
+                    if (boardState[ballPos.getX()][ballPos.getY()] == TileState.BALL.getValue()) {
+                        if (makeProgress(ballPos, hole)) {
+                            return true;
+                        }
+                    } else {
+                        Position nextPos = ballSource.get(ballPos);
+                        if (nextPos == null) {
+                            if (makeProgress(ballPos, hole)) {
+                                return true;
+                            }
+                        } else {
+                            ballPos = nextPos;
+                        }
+                    }
+                } while (true);
+
+            }
+        }
+        return false;
+    }
+
+    private boolean makeProgress(Position startPos, Position goalHole) {
+        int lineLength = ballNumbers[startPos.getX()][startPos.getY()];
+        int[][] tempMoves = new int[width][height];
+        if (isCorrectBranch(startPos, goalHole, lineLength, tempMoves)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean isCorrectBranch(Position currentPos, Position goalHole, int lineLength, int[][] tempMoves) {
+        if (currentPos.equals(goalHole)) {
+            return true;
+        } else if (lineLength == 0 || boardState[currentPos.getX()][currentPos.getY()] == TileState.HOLE.getValue()) {
+            return false;
+        }
+
+        HashMap<Direction, ArrayList<Position>> traversableLines = getTraversableLines(currentPos, lineLength);
+        for (Direction direction : traversableLines.keySet()) {
+            ArrayList<Position> solutionLine = traversableLines.get(direction);
+            Position firstStep = solutionLine.get(0);
+            if (tempMoves[firstStep.getX()][firstStep.getY()] == 1) {
+                continue;//TODO Olika riktningar delar samma tempMoves
+            }
+            Position lastPos = solutionLine.get(solutionLine.size() - 1);
+
+            for (int k = 0; k < solutionLine.size() - 1; k++) {
+                Position stepPos = solutionLine.get(k);
+                tempMoves[stepPos.getX()][stepPos.getY()] = 1;
+            }
+
+            if (isCorrectBranch(lastPos, goalHole, lineLength - 1, tempMoves)) {
+                //TODO Draw path
+
+                //We only do moves that are guaranteed, so here we draw that move into the board
+                for (int k = 0; k < solutionLine.size() - 1; k++) {
+                    Position pos = solutionLine.get(k);
+                    if (direction == Direction.UP || direction == Direction.DOWN) {
+                        boardState[pos.getX()][pos.getY()] = TileState.VERTICAL.getValue();
+                    } else if (direction == Direction.RIGHT || direction == Direction.LEFT) {
+                        boardState[pos.getX()][pos.getY()] = TileState.HORIZONTAL.getValue();
+                    }
+                }
+
+                //TODO Fix below, set currentPos to ball and solved
+                if (!(boardState[lastPos.getX()][lastPos.getY()] == TileState.HOLE.getValue())) {
+                    //If we aren't done yet, we pretend this is the starting point for a new ball
+                    boardState[lastPos.getX()][lastPos.getY()] = TileState.BALL.getValue();
+                    ballNumbers[lastPos.getX()][lastPos.getY()] = lineLength - 1;
+                    ballSource.put(lastPos, currentPos);
+                } else {
+                    //If lastPosition is a hole, mark it as solved, unsure why
+                    solvedNumbers[lastPos.getX()][lastPos.getY()] = 1;
+                    score-= 10; //If a final solution is too quick to end it won't generate many points above and thus becoming net negative here.
+                }
+                //Since we succeeded in making a move, mark the ball that went here as solved
+                solvedNumbers[currentPos.getX()][currentPos.getY()] = 1;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isValidPositionForPath(Position nextPosition, boolean isLastPosition) {
+        return (positionIsEmpty(nextPosition) || (!isLastPosition && positionIsWater(nextPosition)));
     }
 
     private boolean positionIsEmpty(Position position) {
@@ -264,18 +375,36 @@ public class HeruGolfSolver {
                 int tile = board[x][y];
                 String substString;
                 switch (tile) {
-                    case 0 -> substString = " ";
-                    case 1 -> substString = "-";
-                    case 2 -> substString = "|";
-                    case 3 -> substString = "X";
-                    case 4 -> substString = ballNumbers[x][y] + "";
-                    case 5 -> substString = "H";
-                    default -> substString = "ERROR";
+                    case 0 :
+                        substString = " ";
+                        break;
+                    case 1 :
+                        substString = "-";
+                        break;
+                    case 2 :
+                        substString = "|";
+                        break;
+                    case 3 :
+                        substString = "X";
+                        break;
+                    case 4 :
+                        substString = ballNumbers[x][y] + "";
+                        break;
+                    case 5 :
+                        if (solvedNumbers[x][y] == 1) {
+                            substString = "S";
+                        } else {
+                            substString = "H";
+                        }
+                        break;
+                    default :
+                        substString = "ERROR";
                 }
                 System.out.print( substString + " ");
             }
             System.out.println();
         }
+        System.out.println();
     }
 
     private boolean isSolved() {

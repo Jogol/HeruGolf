@@ -17,7 +17,8 @@ public class HeruGolfUtil {
             case RIGHT -> newPosition = new Position(currentPosition.getX() + 1, currentPosition.getY());
             case DOWN -> newPosition = new Position(currentPosition.getX(), currentPosition.getY() + 1);
             case LEFT -> newPosition = new Position(currentPosition.getX() - 1, currentPosition.getY());
-            default -> { return null; }
+            default -> {
+                throw new IllegalStateException("Bad direction: " + direction); }
         }
 
         return newPosition;

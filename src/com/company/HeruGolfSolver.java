@@ -54,7 +54,7 @@ public class HeruGolfSolver {
 //                printPlayableBoard(boardState);
             } else if (findProgressFromHole()) { //TODO Add difficulty scoring
                 //Found progress
-                gotHoleProgress = true;
+                //gotHoleProgress = true;
             } else {
                 //guessProgress(); //TODO Currently not allowing puzzles that require guesses
                 return;
@@ -263,6 +263,7 @@ public class HeruGolfSolver {
     }
 
     private boolean findProgressFromHole() { //TODO Implement
+        score += 5;
 //        Collection<Position> values = possibleBallHolePairs.values();
 //        List<Position> uniqueHoleList = values.stream().filter(i -> Collections.frequency(values, i) == 1).toList();
         for (Position hole : ballsForHoleCounter.keySet()) {
@@ -321,7 +322,8 @@ public class HeruGolfSolver {
                 tempMoves[stepPos.getX()][stepPos.getY()] = 1;
             }
 
-            if (isCorrectBranch(lastPos, goalHole, lineLength - 1, tempMoves)) {
+            int[][] tempCopy = Arrays.stream(tempMoves).map(int[]::clone).toArray(int[][]::new);
+            if (isCorrectBranch(lastPos, goalHole, lineLength - 1, tempCopy)) {
                 //TODO Draw path
 
                 //We only do moves that are guaranteed, so here we draw that move into the board

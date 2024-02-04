@@ -89,7 +89,7 @@ public class Main {
             String timeStamp = LocalDateTime.now().format(formatter);
             for (int i = 0; i < puzzleToplist.size(); i++) {
                 Puzzle puzzle = puzzleToplist.get(i);
-                String puzzleName = "A" + puzzle.getScore() + "_" + (i+1) + "_" + timeStamp;
+                String puzzleName = "B" + puzzle.getScore() + "_" + (i+1) + "_" + timeStamp;
                 printSavableBoardToFile(puzzleName, puzzle.getBoardState(), puzzle.getBallState());
                 //log.info(puzzleName + " " + puzzle.getScore());
             }

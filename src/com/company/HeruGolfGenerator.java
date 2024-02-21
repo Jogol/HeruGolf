@@ -20,6 +20,7 @@ public class HeruGolfGenerator {
 //    double mean = 2.7;
 //    double variance = 1;
     Random rand;
+    boolean goodPuzzle = false;
 
     HeruGolfGenerator(int width, int height) {
         this.width = width;
@@ -79,7 +80,7 @@ public class HeruGolfGenerator {
                     break;
                 }
             }
-            int[][] newBoardState = getBoardStateCopy(boardState);
+            //int[][] newBoardState = getBoardStateCopy(boardState);
             fullness = getBoardFullness();
         }
 

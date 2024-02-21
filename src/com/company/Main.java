@@ -19,6 +19,7 @@ public class Main {
         final long startTime = System.nanoTime();
         int lapMinutes = 60;
         int keepSize = 50;
+        int minimumScore = 1000;
 
         if (args.length == 2) {
             lapMinutes = Integer.parseInt(args[0]);
@@ -45,7 +46,7 @@ public class Main {
                 HeruGolfSolver golfSolver = new HeruGolfSolver(getBoardStateCopy(golfGenerator.getBoardState()), getBoardStateCopy(golfGenerator.getBallNumbers()));
                 if (golfSolver.getSolved()) {
                     solvedPuzzles++;
-                    if (golfSolver.getScore() > 1000) {
+                    if (golfSolver.getScore() > minimumScore) {
                         puzzleToplist.add(new Puzzle(golfGenerator.boardState, golfGenerator.ballNumbers, golfSolver.getScore()));
                     }
                 } else {
@@ -69,7 +70,7 @@ public class Main {
                             TimeUnit.NANOSECONDS.toSeconds(totalTimeNano) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(totalTimeNano)));
                     log.info(percentDone + " - " + "Current: " + output + " - " + "Estimated total: " + totalTimeString);
 
-                    if (puzzleToplist.size() > 1000) {
+                    if (puzzleToplist.size() > keepSize * 100) {
                         trimList(puzzleToplist, keepSize);
                     }
                 }

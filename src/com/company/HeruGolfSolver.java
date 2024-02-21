@@ -35,25 +35,19 @@ public class HeruGolfSolver {
         solvedNumbers = new int[width][height];
         ballSource = new HashMap<>();
 
-        int attemps = 0;
-//        //TODO Ska nog inte göra detta, vill bara ha de som är relevanta för "varvet" i findProgressFromBall
-//        for (int i = 0; i < boardState.length; i++) {
-//            for (int j = 0; j < boardState[0].length; j++) {
-//                if (boardState[i][j] == TileState.BALL.getValue()) {
-//                    possibleBallHolePairs.put(new Position(i, j), new Position(i, j));
-//                }
-//            }
-//        }
-
         boolean gotHoleProgress = false;
         while (!isSolved()) {
             possibleHoleBallPairs = new HashMap<>();
             ballsForHoleCounter = new HashMap<>();
+//            System.out.println("----------------------");
+//            printPlayableBoard(boardState);
+//            System.out.println("----------------------");
             if (findProgressFromBall()) {
-//                System.out.println("Found progress:");
+                //System.out.println("Ball progress");
 //                printPlayableBoard(boardState);
             } else if (findProgressFromHole()) { //TODO Add difficulty scoring
                 //Found progress
+                //System.out.println("Hole progress");
                 //gotHoleProgress = true;
             } else {
                 //guessProgress(); //TODO Currently not allowing puzzles that require guesses
@@ -81,23 +75,34 @@ public class HeruGolfSolver {
 
     private boolean findProgressFromBall() { //TODO Find progress from a hole (eg only one ball can go to that hole)
         score++; //Just starting another lap speaks for the complexity
+
+        //Iterate the board, and for each ball that isn't solved do
         for (int i = 0; i < boardState.length; i++) {
             for (int j = 0; j < boardState[0].length; j++) {
                 if (boardState[i][j] == TileState.BALL.getValue() && solvedNumbers[i][j] == 0) {
                     int lineLength = ballNumbers[i][j];
 
                     Position currentPosition = new Position(i, j);
+                    //Which directions around this position have a valid move with current length?
                     HashMap<Direction, ArrayList<Position>> traversableLines = getTraversableLines(currentPosition, lineLength);
+                    //System.out.println("Num of trav: " + traversableLines.size());
+                    HashMap<Direction, ArrayList<Position>> endingInHoleLines;
+                    if (traversableLines.keySet().size() == 1) {
+                        endingInHoleLines = traversableLines;
+                    } else {
+                        //Which of these directions actually end in a hole?
+                        endingInHoleLines = keepLinesEndingInAHole(currentPosition, traversableLines, lineLength);
+                    }
+                    //System.out.println("Num of ending: " + endingInHoleLines.size());
 
-                    HashMap<Direction, ArrayList<Position>> endingInHoleLines = keepLinesEndingInAHole(currentPosition, traversableLines, lineLength);
-
+                    //If only one direction ends in a hole, that must be the correct path
                     if (endingInHoleLines.keySet().size() == 1) {
                         //This means we only have 1 direction to go that ends in a hole
                         score -= 5; //Only having 1 option is "bad" but necessary eventually
                         Direction solutionDirection = endingInHoleLines.keySet().iterator().next();
                         ArrayList<Position> solutionLine = endingInHoleLines.get(solutionDirection);
 
-                        //We only do moves that are guaranteed, so here we draw that move into the board
+                        //We only do moves that are guaranteed, so here we draw that move into the board (only 1 move)
                         for (int k = 0; k < solutionLine.size() - 1; k++) {
                             Position position = solutionLine.get(k);
                             if (solutionDirection == Direction.UP || solutionDirection == Direction.DOWN) {
@@ -202,17 +207,22 @@ public class HeruGolfSolver {
      * @return true if we were able to add the line
      */
     private boolean isSolveableBranch(Position originalPosition, Position startPosition, int[][] tempMoves, int lineLength) {
+        //TODO BUG: we check if there is any hole, we don't check all holes
+        //This means we don't add all holes to ballForHoleCounter
 
         //If we are on top of a hole already it must be a valid and ending move
         if (boardState[startPosition.getX()][startPosition.getY()] == TileState.HOLE.getValue()) {
             possibleHoleBallPairs.put(startPosition, originalPosition); //TODO Detta blir sista steget innan hålet, men är inte garanterat att vi ritat ut hela vägen dit
             //TODO Make the value an object that holds count and ball origin to speed things up?
             //Allegedly makes value 1 if none existed, otherwise adds existing + 1
+            //System.out.println("Orig: " + originalPosition + " Start: " + startPosition + " Counter: " + ballsForHoleCounter.get(startPosition) + 1);
+            //printTempMoves(tempMoves);
             ballsForHoleCounter.merge(startPosition, 1, Integer::sum);
             return true;
         } else if (lineLength == 0) { //If we are out of moves, this was a false path
             return false;
         }
+        //printTempMoves(tempMoves);
 
         //Checking number of possible lines
         HashMap<Direction, ArrayList<Position>> possibleLines = new HashMap<>();
@@ -252,9 +262,10 @@ public class HeruGolfSolver {
                     tempMoves[position.getX()][position.getY()] = 1;
                 }
 
-                if (isSolveableBranch(originalPosition, lastPosition, tempMoves, lineLength - 1)) {
+                int[][] tempCopy = Arrays.stream(tempMoves).map(int[]::clone).toArray(int[][]::new);
+                if (isSolveableBranch(originalPosition, lastPosition, tempCopy, lineLength - 1)) {
                     isSolveable = true;
-                    break;
+                    //break;
                 }
             }
 
@@ -263,11 +274,12 @@ public class HeruGolfSolver {
     }
 
     private boolean findProgressFromHole() { //TODO Implement
-        score += 5;
+        score += 100;
 //        Collection<Position> values = possibleBallHolePairs.values();
 //        List<Position> uniqueHoleList = values.stream().filter(i -> Collections.frequency(values, i) == 1).toList();
         for (Position hole : ballsForHoleCounter.keySet()) {
             if (ballsForHoleCounter.get(hole) == 1) {
+                //System.out.println("Hole: " + hole);
                 Position ballPos = possibleHoleBallPairs.get(hole);
                 do {
                     if (boardState[ballPos.getX()][ballPos.getY()] == TileState.BALL.getValue()) {
@@ -324,7 +336,6 @@ public class HeruGolfSolver {
 
             int[][] tempCopy = Arrays.stream(tempMoves).map(int[]::clone).toArray(int[][]::new);
             if (isCorrectBranch(lastPos, goalHole, lineLength - 1, tempCopy)) {
-                //TODO Draw path
 
                 //We only do moves that are guaranteed, so here we draw that move into the board
                 for (int k = 0; k < solutionLine.size() - 1; k++) {
@@ -398,6 +409,28 @@ public class HeruGolfSolver {
                         } else {
                             substString = "H";
                         }
+                        break;
+                    default :
+                        substString = "ERROR";
+                }
+                System.out.print( substString + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+
+    private void printTempMoves(int[][] board) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int tile = board[x][y];
+                String substString;
+                switch (tile) {
+                    case 0 :
+                        substString = "O";
+                        break;
+                    case 1 :
+                        substString = "X";
                         break;
                     default :
                         substString = "ERROR";
